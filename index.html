@@ -192,7 +192,7 @@
         <ul class="help">
             <li><strong>Import/Export format:</strong> JSON was selected for cross-platform support and complete timer metadata.</li>
             <li><strong>Date lock rule:</strong> completion is disabled before scheduled date/time, with clear reason text.</li>
-            <li><strong>Timer safety:</strong> UTC timestamps are used; active timers pause if major clock drift/timezone jump is detected.</li>
+            <li><strong>Timer safety:</strong> epoch-millisecond timestamps are used; active timers pause if major clock drift/timezone jump is detected.</li>
             <li><strong>Keyboard shortcuts:</strong> Alt+Shift+T timer toggle, Alt+Shift+N sessions tab, Alt+Shift+E exams tab, Ctrl/Cmd+F search.</li>
             <li><strong>UX upgrades:</strong> stronger empty states, filters/sort/search, calendar drill-down, and defensive validation.</li>
         </ul>
@@ -204,6 +204,10 @@
     const firebaseConfig = { apiKey: "AIzaSyBojGtfnEB3aj4my_QBRBD5rTrshSXTjag", authDomain: "higherexams.firebaseapp.com", projectId: "higherexams", storageBucket: "higherexams.firebasestorage.app", messagingSenderId: "768134563319", appId: "1:768134563319:web:2e1729cedf42f42683daf2" };
     const STORAGE_KEY = 'higher-state-v3';
     const TOAST_MS = 2600;
+    const HOUR_MS = 60 * 60 * 1000;
+    const DAY_MS = 24 * HOUR_MS;
+    const MIN_FOCUS_SECONDS = 5 * 60;
+    // 5 minutes avoids false positives from minor scheduling jitter while still catching manual clock/timezone jumps.
     const CLOCK_DRIFT_MS = 5 * 60 * 1000;
     const SYNC_THROTTLE_MS = 1200;
 
@@ -230,7 +234,8 @@
     let activeTab = 'sessions';
     let selectedDayKey = null;
     let currentCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    let lastObservedNow = Date.now();
+    let lastObservedNow = null;
+    let lastDriftCheckAt = 0;
 
     const showToast = message => { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), TOAST_MS); };
     const canCompleteByDate = startAtMs => Date.now() >= startAtMs;
@@ -301,7 +306,7 @@
     }
 
     function applyRemoteState(remote) {
-        if (!remote || (remote.deviceId === deviceId && remote.updatedAt <= state.updatedAt) || Number(remote.updatedAt) < Number(state.updatedAt)) return;
+        if (!remote || Number(remote.updatedAt) <= Number(state.updatedAt)) return;
         suppressRemoteApply = true; state = normalizeState(remote); saveLocalState(); renderAll(); suppressRemoteApply = false;
     }
 
@@ -360,17 +365,25 @@
 
         const empty = document.getElementById('todayEmptyState');
         const todayCount = state.sessions.filter(s => dayKeyFromMs(s.startAtMs) === dayKeyFromMs(Date.now())).length;
-        if (todayCount === 0) { empty.classList.remove('hidden'); empty.innerHTML = `No study session is scheduled for today. <button id="emptyAddTodayBtn" class="primary" type="button">Add a 3-hour session today</button>`; setTimeout(() => { const b = document.getElementById('emptyAddTodayBtn'); if (b) b.onclick = quickAddToday; }, 0); } else { empty.classList.add('hidden'); empty.textContent = ''; }
+        if (todayCount === 0) {
+            empty.classList.remove('hidden');
+            empty.innerHTML = 'No study session is scheduled for today. <button class="primary" type="button" data-empty-action="quick-add-today">Add a 3-hour session today</button>';
+        } else {
+            empty.classList.add('hidden');
+            empty.textContent = '';
+        }
         if (sessions.length === 0) { list.innerHTML = '<div class="empty">No sessions match your filters yet.</div>'; return; }
 
         list.innerHTML = sessions.map(s => {
             const unlocked = canCompleteByDate(s.startAtMs), elapsed = getSessionElapsedSeconds(s), planned = s.durationMinutes * 60;
             const status = s.completed ? '<span class="badge status-ok">Completed</span>' : (unlocked ? '<span class="badge">In progress</span>' : '<span class="badge status-lock" title="Cannot complete before scheduled date/time">Locked by schedule</span>');
             const lockMsg = !unlocked && !s.completed ? `<div class="meta" style="color:var(--warn)">Completion locked until ${formatDateTime(s.startAtMs)}.</div>` : '';
+            const completeDisabled = !unlocked && !s.completed;
+            const completeTitle = completeDisabled ? `title="Locked until ${formatDateTime(s.startAtMs)}" aria-label="Locked until ${formatDateTime(s.startAtMs)}"` : '';
             const buttons = [
                 actionButton('start', s.id, 'Start', '', s.completed),
                 actionButton('stop', s.id, 'Stop', '', !s.timerRunning),
-                actionButton('complete', s.id, 'Complete', 'ok', !unlocked && !s.completed),
+                `<button type="button" data-session-action="complete" data-session-id="${s.id}" class="ok" ${completeDisabled ? 'disabled' : ''} ${completeTitle}>Complete</button>`,
                 actionButton('override', s.id, 'Manual override', 'warn', s.completed)
             ].join('');
             return `<article class="card"><div class="card-top"><div><strong>${s.title}</strong> <span class="meta">• ${s.subject}</span><div class="meta">${formatDateTime(s.startAtMs)} • ${s.durationMinutes}m planned</div></div>${status}</div><div class="meta">${s.notes || 'No notes yet.'}</div>${lockMsg}<div class="meta">Session timer: ${formatDuration(elapsed)} / ${formatDuration(planned)} (${s.timerRunning ? 'Running' : 'Stopped'})</div><div class="inline-actions">${buttons}</div></article>`;
@@ -447,6 +460,11 @@
     function markSessionComplete(id) { updateState(draft => { const s = draft.sessions.find(x => x.id === id); if (!s) return; if (!canCompleteByDate(s.startAtMs) && !s.completed) { showToast(`Cannot complete before ${formatDateTime(s.startAtMs)}.`); return; } s.completed = !s.completed; s.completedAtMs = s.completed ? Date.now() : null; if (s.completed) { s.timerRunning = false; s.timerStartedAtMs = null; } }); }
     function manualOverride(id) { updateState(draft => { const s = draft.sessions.find(x => x.id === id); if (!s) return; if (s.timerRunning && s.timerStartedAtMs) s.elapsedSeconds = (Number(s.elapsedSeconds) || 0) + Math.floor(Math.max(0, Date.now() - s.timerStartedAtMs) / 1000); s.timerRunning = false; s.timerStartedAtMs = null; s.completed = true; s.completedAtMs = Date.now(); s.manualOverride = true; }); showToast('Session manually completed (override used).'); }
     function onSessionActionClick(event) {
+        const emptyActionButton = event.target.closest('button[data-empty-action]');
+        if (emptyActionButton && emptyActionButton.dataset.emptyAction === 'quick-add-today') {
+            quickAddToday();
+            return;
+        }
         const button = event.target.closest('button[data-session-action][data-session-id]');
         if (!button) return;
         const action = button.dataset.sessionAction;
@@ -479,7 +497,15 @@
 
     function tickTimers() {
         const now = Date.now();
-        if (Math.abs(now - lastObservedNow) > CLOCK_DRIFT_MS) {
+        if (lastObservedNow === null) {
+            lastObservedNow = now;
+            return;
+        }
+        const shouldCheckDrift = now - lastDriftCheckAt >= 10000;
+        if (shouldCheckDrift) {
+            lastDriftCheckAt = now;
+        }
+        if (shouldCheckDrift && Math.abs(now - lastObservedNow) > CLOCK_DRIFT_MS) {
             updateState(draft => {
                 draft.sessions.forEach(s => { if (s.timerRunning && s.timerStartedAtMs) { s.elapsedSeconds = (Number(s.elapsedSeconds) || 0) + Math.floor(Math.max(0, now - s.timerStartedAtMs) / 1000); s.timerRunning = false; s.timerStartedAtMs = null; } });
                 if (draft.focusTimer.isRunning && draft.focusTimer.targetEndMs) { draft.focusTimer.remainingSeconds = Math.max(0, Math.ceil((draft.focusTimer.targetEndMs - now) / 1000)); draft.focusTimer.isRunning = false; draft.focusTimer.targetEndMs = null; }
@@ -505,7 +531,7 @@
             f.lastChangedAt = Date.now();
         });
     }
-    const resetFocusTimer = (minutes = null) => updateState(draft => { const f = draft.focusTimer; f.isRunning = false; f.targetEndMs = null; f.remainingSeconds = Math.max(300, (minutes || draft.settings.defaultFocusMinutes) * 60); f.lastChangedAt = Date.now(); });
+    const resetFocusTimer = (minutes = null) => updateState(draft => { const f = draft.focusTimer; f.isRunning = false; f.targetEndMs = null; f.remainingSeconds = Math.max(MIN_FOCUS_SECONDS, (minutes || draft.settings.defaultFocusMinutes) * 60); f.lastChangedAt = Date.now(); });
     function quickAddToday() { const now = new Date(); now.setHours(Math.max(now.getHours(), 16), 0, 0, 0); updateState(draft => draft.sessions.push(normalizeSession({ id: randomId('session'), title: 'Custom 3-hour study block', subject: 'Other', startAtMs: now.getTime(), durationMinutes: 180, notes: 'Added from today empty-state CTA.', completed: false, elapsedSeconds: 0, timerRunning: false, timerStartedAtMs: null }))); showToast('Added a 3-hour session for today.'); }
 
     function bindUi() {
@@ -514,6 +540,7 @@
         document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderTabVisibility(); }));
         document.getElementById('quickAddTodayBtn').addEventListener('click', quickAddToday);
         document.getElementById('sessionList').addEventListener('click', onSessionActionClick);
+        document.getElementById('todayEmptyState').addEventListener('click', onSessionActionClick);
         document.getElementById('sessionForm').addEventListener('submit', event => {
             event.preventDefault();
             const title = document.getElementById('sessionTitle').value.trim();
@@ -548,10 +575,10 @@
             const file = event.target.files && event.target.files[0]; if (!file) return;
             try {
                 const parsed = JSON.parse(await file.text());
-                if (!Array.isArray(parsed.sessions) || !Array.isArray(parsed.exams)) throw new Error('invalid');
+                if (!Array.isArray(parsed.sessions) || !Array.isArray(parsed.exams)) throw new Error('Import file must include sessions[] and exams[] arrays.');
                 updateState(draft => { draft.sessions = parsed.sessions.map(normalizeSession); draft.exams = parsed.exams.map(normalizeExam); if (parsed.settings) draft.settings = normalizeState({ settings: parsed.settings }).settings; if (parsed.focusTimer) draft.focusTimer = normalizeState({ focusTimer: parsed.focusTimer }).focusTimer; });
                 showToast('Import complete.');
-            } catch { showToast('Import failed. Use a valid exported JSON file.'); }
+            } catch (error) { showToast(error && error.message ? error.message : 'Import failed. Use a valid exported JSON file.'); }
             finally { event.target.value = ''; }
         });
         document.addEventListener('visibilitychange', tickTimers);
@@ -570,7 +597,10 @@
         const session = normalizeSession({ id: 'x', title: 'x', subject: 'x', startAtMs: past, durationMinutes: 1, elapsedSeconds: 60, completed: false, timerRunning: false, timerStartedAtMs: null });
         const autoCompletes = completeSessionIfNeeded(session, Date.now()) && session.completed;
         const checks = [canCompleteByDate(future) === false, canCompleteByDate(past) === true, autoCompletes];
-        if (!checks.every(Boolean)) showToast('Internal checks found an issue.');
+        if (!checks.every(Boolean)) {
+            console.warn('Runtime behavior checks failed', { checks });
+            showToast('Unexpected behavior detected. Please refresh the page.');
+        }
     }
 
     bindUi();
@@ -579,8 +609,8 @@
     subscribeCloud();
     runKeyBehaviorChecks();
     setInterval(tickTimers, 1000);
-    document.getElementById('sessionDateTime').value = toISODateTimeLocal(Date.now() + 3600000);
-    document.getElementById('examDateTime').value = toISODateTimeLocal(Date.now() + 24 * 3600000);
+    document.getElementById('sessionDateTime').value = toISODateTimeLocal(Date.now() + HOUR_MS);
+    document.getElementById('examDateTime').value = toISODateTimeLocal(Date.now() + DAY_MS);
 </script>
 </body>
 </html>
