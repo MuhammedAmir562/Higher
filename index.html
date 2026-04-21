@@ -329,13 +329,34 @@
         sf.value = subjects.includes(sv) ? sv : 'all'; ef.value = subjects.includes(ev) ? ev : 'all';
     }
 
+    function sortSessions(sessions, sort) {
+        if (sort === 'subject') {
+            sessions.sort((a, b) => a.subject.localeCompare(b.subject) || a.startAtMs - b.startAtMs);
+            return;
+        }
+        if (sort === 'today') {
+            const todayKey = dayKeyFromMs(Date.now());
+            sessions.sort((a, b) => {
+                const aToday = dayKeyFromMs(a.startAtMs) === todayKey ? 0 : 1;
+                const bToday = dayKeyFromMs(b.startAtMs) === todayKey ? 0 : 1;
+                return aToday - bToday || a.startAtMs - b.startAtMs;
+            });
+            return;
+        }
+        sessions.sort((a, b) => a.startAtMs - b.startAtMs);
+    }
+
+    function actionButton(action, id, label, className = '', disabled = false) {
+        return `<button type="button" data-session-action="${action}" data-session-id="${id}" class="${className}" ${disabled ? 'disabled' : ''}>${label}</button>`;
+    }
+
     function renderSessions() {
         const list = document.getElementById('sessionList');
         const search = document.getElementById('sessionSearch').value.trim().toLowerCase();
         const subject = document.getElementById('sessionSubjectFilter').value;
         const sort = document.getElementById('sessionSort').value;
         let sessions = state.sessions.filter(s => (!search || `${s.title} ${s.subject} ${s.notes}`.toLowerCase().includes(search)) && (subject === 'all' || s.subject === subject));
-        sessions.sort((a, b) => sort === 'subject' ? a.subject.localeCompare(b.subject) || a.startAtMs - b.startAtMs : sort === 'today' ? (dayKeyFromMs(a.startAtMs) === dayKeyFromMs(Date.now()) ? 0 : 1) - (dayKeyFromMs(b.startAtMs) === dayKeyFromMs(Date.now()) ? 0 : 1) || a.startAtMs - b.startAtMs : a.startAtMs - b.startAtMs);
+        sortSessions(sessions, sort);
 
         const empty = document.getElementById('todayEmptyState');
         const todayCount = state.sessions.filter(s => dayKeyFromMs(s.startAtMs) === dayKeyFromMs(Date.now())).length;
@@ -346,7 +367,13 @@
             const unlocked = canCompleteByDate(s.startAtMs), elapsed = getSessionElapsedSeconds(s), planned = s.durationMinutes * 60;
             const status = s.completed ? '<span class="badge status-ok">Completed</span>' : (unlocked ? '<span class="badge">In progress</span>' : '<span class="badge status-lock" title="Cannot complete before scheduled date/time">Locked by schedule</span>');
             const lockMsg = !unlocked && !s.completed ? `<div class="meta" style="color:var(--warn)">Completion locked until ${formatDateTime(s.startAtMs)}.</div>` : '';
-            return `<article class="card"><div class="card-top"><div><strong>${s.title}</strong> <span class="meta">• ${s.subject}</span><div class="meta">${formatDateTime(s.startAtMs)} • ${s.durationMinutes}m planned</div></div>${status}</div><div class="meta">${s.notes || 'No notes yet.'}</div>${lockMsg}<div class="meta">Session timer: ${formatDuration(elapsed)} / ${formatDuration(planned)} (${s.timerRunning ? 'Running' : 'Stopped'})</div><div class="inline-actions"><button type="button" onclick="startSessionTimer('${s.id}')" ${s.completed ? 'disabled' : ''}>Start</button><button type="button" onclick="stopSessionTimer('${s.id}')" ${!s.timerRunning ? 'disabled' : ''}>Stop</button><button type="button" class="ok" onclick="markSessionComplete('${s.id}')" ${!unlocked && !s.completed ? 'disabled' : ''}>Complete</button><button type="button" class="warn" onclick="manualOverride('${s.id}')" ${s.completed ? 'disabled' : ''}>Manual override</button></div></article>`;
+            const buttons = [
+                actionButton('start', s.id, 'Start', '', s.completed),
+                actionButton('stop', s.id, 'Stop', '', !s.timerRunning),
+                actionButton('complete', s.id, 'Complete', 'ok', !unlocked && !s.completed),
+                actionButton('override', s.id, 'Manual override', 'warn', s.completed)
+            ].join('');
+            return `<article class="card"><div class="card-top"><div><strong>${s.title}</strong> <span class="meta">• ${s.subject}</span><div class="meta">${formatDateTime(s.startAtMs)} • ${s.durationMinutes}m planned</div></div>${status}</div><div class="meta">${s.notes || 'No notes yet.'}</div>${lockMsg}<div class="meta">Session timer: ${formatDuration(elapsed)} / ${formatDuration(planned)} (${s.timerRunning ? 'Running' : 'Stopped'})</div><div class="inline-actions">${buttons}</div></article>`;
         }).join('');
     }
 
@@ -419,7 +446,36 @@
     function stopSessionTimer(id) { updateState(draft => { const s = draft.sessions.find(x => x.id === id); if (!s || !s.timerRunning || !s.timerStartedAtMs) return; s.elapsedSeconds = (Number(s.elapsedSeconds) || 0) + Math.floor(Math.max(0, Date.now() - s.timerStartedAtMs) / 1000); s.timerRunning = false; s.timerStartedAtMs = null; }); }
     function markSessionComplete(id) { updateState(draft => { const s = draft.sessions.find(x => x.id === id); if (!s) return; if (!canCompleteByDate(s.startAtMs) && !s.completed) { showToast(`Cannot complete before ${formatDateTime(s.startAtMs)}.`); return; } s.completed = !s.completed; s.completedAtMs = s.completed ? Date.now() : null; if (s.completed) { s.timerRunning = false; s.timerStartedAtMs = null; } }); }
     function manualOverride(id) { updateState(draft => { const s = draft.sessions.find(x => x.id === id); if (!s) return; if (s.timerRunning && s.timerStartedAtMs) s.elapsedSeconds = (Number(s.elapsedSeconds) || 0) + Math.floor(Math.max(0, Date.now() - s.timerStartedAtMs) / 1000); s.timerRunning = false; s.timerStartedAtMs = null; s.completed = true; s.completedAtMs = Date.now(); s.manualOverride = true; }); showToast('Session manually completed (override used).'); }
-    window.startSessionTimer = startSessionTimer; window.stopSessionTimer = stopSessionTimer; window.markSessionComplete = markSessionComplete; window.manualOverride = manualOverride;
+    function onSessionActionClick(event) {
+        const button = event.target.closest('button[data-session-action][data-session-id]');
+        if (!button) return;
+        const action = button.dataset.sessionAction;
+        const sessionId = button.dataset.sessionId;
+        if (action === 'start') startSessionTimer(sessionId);
+        if (action === 'stop') stopSessionTimer(sessionId);
+        if (action === 'complete') markSessionComplete(sessionId);
+        if (action === 'override') manualOverride(sessionId);
+    }
+
+    function exportSchedule() {
+        const payload = {
+            schemaVersion: 3,
+            exportedAt: new Date().toISOString(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+            sessions: state.sessions,
+            exams: state.exams,
+            settings: state.settings,
+            focusTimer: state.focusTimer
+        };
+        const out = JSON.stringify(payload, null, 2);
+        const blob = new Blob([out], { type: 'application/json' });
+        const anchor = document.createElement('a');
+        anchor.href = URL.createObjectURL(blob);
+        anchor.download = `higher-schedule-${new Date().toISOString().slice(0, 10)}.json`;
+        anchor.click();
+        URL.revokeObjectURL(anchor.href);
+        showToast('Exported schedule JSON.');
+    }
 
     function tickTimers() {
         const now = Date.now();
@@ -457,16 +513,25 @@
         ['examSearch','examSubjectFilter','examSort'].forEach(id => { document.getElementById(id).addEventListener('input', renderExams); document.getElementById(id).addEventListener('change', renderExams); });
         document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderTabVisibility(); }));
         document.getElementById('quickAddTodayBtn').addEventListener('click', quickAddToday);
+        document.getElementById('sessionList').addEventListener('click', onSessionActionClick);
         document.getElementById('sessionForm').addEventListener('submit', event => {
             event.preventDefault();
-            const title = document.getElementById('sessionTitle').value.trim(), subject = document.getElementById('sessionSubject').value, ms = parseLocalDateTime(document.getElementById('sessionDateTime').value), duration = Number(document.getElementById('sessionDuration').value), notes = document.getElementById('sessionNotes').value.trim();
+            const title = document.getElementById('sessionTitle').value.trim();
+            const subject = document.getElementById('sessionSubject').value;
+            const ms = parseLocalDateTime(document.getElementById('sessionDateTime').value);
+            const duration = Number(document.getElementById('sessionDuration').value);
+            const notes = document.getElementById('sessionNotes').value.trim();
             if (!title || !ms || !Number.isFinite(duration) || duration < 5 || duration > 720) { showToast('Enter valid session title, date/time, and duration.'); return; }
             updateState(draft => draft.sessions.push(normalizeSession({ id: randomId('session'), title, subject, startAtMs: ms, durationMinutes: duration, notes, completed: false, elapsedSeconds: 0, timerRunning: false, timerStartedAtMs: null })));
             event.target.reset(); showToast('Session added.');
         });
         document.getElementById('examForm').addEventListener('submit', event => {
             event.preventDefault();
-            const subject = document.getElementById('examSubject').value, ms = parseLocalDateTime(document.getElementById('examDateTime').value), duration = Number(document.getElementById('examDuration').value), description = document.getElementById('examDescription').value.trim(), afterThoughts = document.getElementById('examThoughts').value.trim();
+            const subject = document.getElementById('examSubject').value;
+            const ms = parseLocalDateTime(document.getElementById('examDateTime').value);
+            const duration = Number(document.getElementById('examDuration').value);
+            const description = document.getElementById('examDescription').value.trim();
+            const afterThoughts = document.getElementById('examThoughts').value.trim();
             if (!ms || !Number.isFinite(duration) || duration < 10 || duration > 600) { showToast('Enter valid exam date/time and duration.'); return; }
             updateState(draft => draft.exams.push(normalizeExam({ id: randomId('exam'), subject, dateTimeMs: ms, durationMinutes: duration, description, afterThoughts })));
             event.target.reset(); showToast('Exam added.');
@@ -478,7 +543,7 @@
         document.getElementById('prevMonthBtn').addEventListener('click', () => { currentCalendarMonth = new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() - 1, 1); renderCalendar(); });
         document.getElementById('nextMonthBtn').addEventListener('click', () => { currentCalendarMonth = new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() + 1, 1); renderCalendar(); });
         document.getElementById('saveSettingsBtn').addEventListener('click', () => { const tf = document.getElementById('timeFormatSelect').value, mins = Number(document.getElementById('defaultFocusMinutes').value); if (!Number.isFinite(mins) || mins < 5 || mins > 360) { showToast('Default focus minutes must be 5-360.'); return; } updateState(draft => { draft.settings.timeFormat = tf === '12' ? '12' : '24'; draft.settings.defaultFocusMinutes = mins; if (!draft.focusTimer.isRunning) draft.focusTimer.remainingSeconds = mins * 60; }); showToast('Settings saved.'); });
-        document.getElementById('exportBtn').addEventListener('click', () => { const out = JSON.stringify({ schemaVersion: 3, exportedAt: new Date().toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', sessions: state.sessions, exams: state.exams, settings: state.settings, focusTimer: state.focusTimer }, null, 2); const blob = new Blob([out], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `higher-schedule-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(a.href); showToast('Exported schedule JSON.'); });
+        document.getElementById('exportBtn').addEventListener('click', exportSchedule);
         document.getElementById('importInput').addEventListener('change', async event => {
             const file = event.target.files && event.target.files[0]; if (!file) return;
             try {
@@ -500,8 +565,11 @@
     }
 
     function runKeyBehaviorChecks() {
-        const future = Date.now() + 3600000, past = Date.now() - 3600000;
-        const checks = [canCompleteByDate(future) === false, canCompleteByDate(past) === true, (() => { const s = normalizeSession({ id: 'x', title: 'x', subject: 'x', startAtMs: past, durationMinutes: 1, elapsedSeconds: 60, completed: false, timerRunning: false, timerStartedAtMs: null }); return completeSessionIfNeeded(s, Date.now()) && s.completed; })()];
+        const future = Date.now() + 3600000;
+        const past = Date.now() - 3600000;
+        const session = normalizeSession({ id: 'x', title: 'x', subject: 'x', startAtMs: past, durationMinutes: 1, elapsedSeconds: 60, completed: false, timerRunning: false, timerStartedAtMs: null });
+        const autoCompletes = completeSessionIfNeeded(session, Date.now()) && session.completed;
+        const checks = [canCompleteByDate(future) === false, canCompleteByDate(past) === true, autoCompletes];
         if (!checks.every(Boolean)) showToast('Internal checks found an issue.');
     }
 
