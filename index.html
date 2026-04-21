@@ -7,664 +7,440 @@
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
     <style>
-        :root { --bg:#0b1220; --panel:#141d2f; --line:#2d3a55; --text:#e5edff; --muted:#9db0d3; --brand:#5aa9ff; --ok:#35d39a; --warn:#ffbf4d; }
+        :root { --bg:#050b14; --panel:rgba(20,30,48,0.7); --line:rgba(90,169,255,0.15); --text:#e5edff; --muted:#8a9ec1; --brand:#5aa9ff; --brand-glow:rgba(90,169,255,0.3); --ok:#10b981; --warn:#f59e0b; }
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(180deg,#070d18,#0f1a2f); color: var(--text); }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: radial-gradient(circle at top right, #0a1930, #050b14 100%); color: var(--text); min-height: 100vh; }
         .app { max-width: 1240px; margin: 0 auto; padding: 1rem; }
-        header { background: rgba(20,29,47,.92); border: 1px solid var(--line); border-radius: 14px; padding: 1rem; margin-bottom: 1rem; position: sticky; top: .75rem; z-index: 10; backdrop-filter: blur(8px); }
-        .header-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
-        .title { margin: 0; font-size: clamp(1.2rem, 3vw, 1.8rem); }
-        .subtitle { margin: .25rem 0 0; color: var(--muted); font-size: .9rem; }
-        .sync { font-size: .75rem; color: var(--muted); background: #0e1629; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); }
-        .progress-shell { margin-top: .8rem; height: 18px; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #0b1325; }
-        .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg,#4ea5ff,#8d7eff); transition: width .3s ease; }
-        .progress-text { margin: .4rem 0 0; font-size: .82rem; color: var(--muted); }
-        .tabs { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .8rem; }
-        .tab-btn { border: 1px solid var(--line); background: #0e1629; color: var(--text); border-radius: 8px; padding: .45rem .7rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
-        .tab-btn:hover { background: #152746; }
-        .tab-btn.active { border-color: var(--brand); background: #152746; box-shadow: 0 0 8px rgba(90,169,255,0.15); }
-        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
-        .panel { background: rgba(20,29,47,.92); border: 1px solid var(--line); border-radius: 14px; padding: 1rem; }
-        .panel h2, .panel h3 { margin-top: 0; }
-        .hidden { display: none !important; }
-        .controls { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: .6rem; margin-bottom: .75rem; }
-        input, select, textarea, button { font: inherit; color: var(--text); }
-        input, select, textarea { width: 100%; background: #0f192f; border: 1px solid var(--line); border-radius: 8px; padding: .55rem; transition: border-color 0.2s; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand); }
-        textarea { min-height: 85px; resize: vertical; }
-        button { background: #12213d; border: 1px solid var(--line); border-radius: 8px; padding: .55rem .75rem; cursor: pointer; transition: all 0.2s; }
-        button:hover:not(:disabled) { background: #1a2f54; }
-        button.primary { background: #234073; border-color: #2f5799; font-weight: bold; }
-        button.primary:hover:not(:disabled) { background: #2a4d8a; }
-        button.ok { background: #103829; border-color: #1f6247; color: var(--ok); }
-        button.warn { background: #3f2f10; border-color: #6b4b10; color: var(--warn); }
-        button:disabled { opacity: .4; cursor: not-allowed; }
-        .list { display: grid; gap: .65rem; }
-        .card { background: #0f192e; border: 1px solid var(--line); border-radius: 10px; padding: .75rem; display: grid; gap: .45rem; transition: all 0.3s ease; }
         
-        /* UX UPGRADES: Card States */
-        .card.active-timer { border-color: var(--brand); box-shadow: 0 0 12px rgba(90,169,255,0.2); background: #13223f; }
-        .card.completed { opacity: 0.65; border-color: #1f6247; background: #0b111c; }
-        .card.completed:hover { opacity: 0.9; }
+        /* Glassmorphism Header */
+        header { background: rgba(10, 15, 26, 0.85); border: 1px solid var(--line); border-radius: 16px; padding: 1.2rem; margin-bottom: 1.5rem; position: sticky; top: 1rem; z-index: 100; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .header-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
+        .title { margin: 0; font-size: clamp(1.2rem, 3vw, 1.6rem); font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(90deg, #fff, #5aa9ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { margin: .25rem 0 0; color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .sync { font-size: .75rem; color: var(--ok); background: rgba(16,185,129,0.1); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(16,185,129,0.3); display: flex; align-items: center; gap: 6px; font-weight: 600; }
+        .sync::before { content: ''; width: 6px; height: 6px; background: var(--ok); border-radius: 50%; box-shadow: 0 0 8px var(--ok); animation: pulse 2s infinite; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; flex-wrap: wrap; }
-        .meta { color: var(--muted); font-size: .85rem; line-height: 1.4; }
-        .badge { border: 1px solid var(--line); border-radius: 999px; padding: .15rem .6rem; font-size: .75rem; font-weight: 600; color: var(--muted); background: rgba(0,0,0,0.2); }
-        .status-ok { color: var(--ok); border-color: #1f6247; background: rgba(16,56,41,0.5); }
-        .status-lock { color: var(--warn); border-color: #6b4b10; }
-        .inline-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 0.2rem; }
-        .empty { border: 2px dashed #2d3a55; border-radius: 10px; padding: 2rem 1rem; color: var(--muted); text-align: center; background: rgba(0,0,0,0.1); }
-        .timer-box { background: #0d1629; border: 1px solid var(--line); border-radius: 10px; padding: 1rem; text-align: center; }
-        .timer-time { font-size: 2.2rem; font-weight: 700; margin: .5rem 0; color: var(--brand); font-variant-numeric: tabular-nums; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: .4rem; }
-        .cal-cell { border: 1px solid var(--line); border-radius: 8px; min-height: 82px; padding: .35rem; background: #0f1a30; font-size: .78rem; cursor: pointer; transition: background 0.2s; }
-        .cal-cell:hover { background: #152746; }
-        .cal-cell.other { opacity: .3; }
-        .cal-cell.today { border-color: var(--brand); background: rgba(90,169,255,0.05); }
-        .dot-row { display: flex; flex-wrap: wrap; gap: .2rem; margin-top: .4rem; }
-        .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
-        .dot.session { background: var(--brand); box-shadow: 0 0 4px var(--brand); }
-        .dot.exam { background: var(--warn); box-shadow: 0 0 4px var(--warn); }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1a2942; border: 1px solid var(--brand); border-radius: 8px; padding: .8rem 1.2rem; opacity: 0; transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; z-index: 20; max-width: 90vw; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        .help li { margin-bottom: .6rem; color: var(--muted); line-height: 1.5; }
-        @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
-        @media (max-width: 700px) { .cal-cell { min-height: 62px; font-size: .72rem; } }
+        /* Progress Bar */
+        .progress-shell { margin-top: 1rem; height: 12px; border-radius: 999px; background: rgba(0,0,0,0.5); overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+        .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3b82f6, #8b5cf6, #d946ef); transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1); border-radius: 999px; }
+        .progress-text { margin: .4rem 0 0; font-size: .8rem; color: var(--muted); font-weight: 500; text-align: right; }
+        
+        /* Modern Tabs */
+        .tabs { display: flex; gap: .5rem; margin-top: 1rem; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { border: none; background: transparent; color: var(--muted); border-radius: 8px; padding: .6rem 1rem; cursor: pointer; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+        .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+        .tab-btn.active { color: var(--text); background: rgba(90,169,255,0.15); box-shadow: inset 0 0 0 1px var(--brand); }
+
+        /* Grid Layout */
+        .grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start; }
+        .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(8px); }
+        .panel h2 { margin-top: 0; font-size: 1.3rem; border-bottom: 1px solid var(--line); padding-bottom: 0.8rem; margin-bottom: 1.2rem; }
+        .hidden { display: none !important; }
+        
+        /* UX Upgrade: Filter Pills */
+        .pill-group { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.8rem; margin-bottom: 1rem; scrollbar-width: none; }
+        .pill-group::-webkit-scrollbar { display: none; }
+        .pill { background: rgba(0,0,0,0.3); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 0.4rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.85rem; white-space: nowrap; transition: all 0.2s; }
+        .pill:hover { border-color: var(--brand); color: var(--text); }
+        .pill.active { background: var(--brand); color: #000; border-color: var(--brand); box-shadow: 0 0 12px var(--brand-glow); }
+
+        .controls { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: .8rem; margin-bottom: 1rem; }
+        input, select, textarea { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: .7rem; transition: all 0.2s; font-family: inherit; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--brand); background: rgba(90,169,255,0.05); }
+        button { font-family: inherit; background: rgba(255,255,255,0.05); border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: .6rem 1rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        button:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: var(--muted); }
+        button.primary { background: var(--brand); border-color: var(--brand); color: #000; }
+        button.primary:hover:not(:disabled) { background: #4592e6; transform: translateY(-1px); box-shadow: 0 4px 12px var(--brand-glow); }
+        button.ok { background: rgba(16,185,129,0.15); border-color: var(--ok); color: var(--ok); }
+        button.ok:hover:not(:disabled) { background: rgba(16,185,129,0.25); }
+        button:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* Unified HUD Timer */
+        .hud-timer { background: linear-gradient(145deg, #112038, #0a1324); border: 2px solid var(--line); border-radius: 16px; padding: 1.5rem; text-align: center; position: sticky; top: 12rem; box-shadow: 0 8px 32px rgba(0,0,0,0.4); margin-bottom: 1.5rem; transition: all 0.3s; }
+        .hud-timer.active-glow { border-color: var(--brand); box-shadow: 0 0 20px var(--brand-glow); }
+        .hud-target { color: var(--brand); font-weight: 700; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 1px; }
+        .timer-time { font-size: 3.5rem; font-weight: 800; margin: 0; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: -2px; }
+        .hud-controls { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.2rem; }
+
+        /* Cards */
+        .list { display: grid; gap: 1rem; }
+        .card { background: rgba(0,0,0,0.2); border: 1px solid var(--line); border-radius: 14px; padding: 1.2rem; display: grid; gap: .6rem; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); position: relative; overflow: hidden; }
+        .card::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; background: var(--line); transition: all 0.3s; }
+        
+        /* Card States */
+        .card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .card.active-timer { border-color: var(--brand); background: rgba(90,169,255,0.05); }
+        .card.active-timer::before { background: var(--brand); box-shadow: 0 0 12px var(--brand); }
+        .card.completed { opacity: 0.6; border-color: rgba(16,185,129,0.3); background: rgba(0,0,0,0.4); order: 999; } /* Pushes to bottom */
+        .card.completed::before { background: var(--ok); }
+        .card.completed:hover { opacity: 1; }
+
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+        .card-title { font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem; }
+        .meta { color: var(--muted); font-size: .85rem; line-height: 1.5; }
+        .badge { border-radius: 6px; padding: .2rem .6rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+        .bg-neutral { background: rgba(255,255,255,0.1); color: var(--muted); }
+        .bg-active { background: rgba(90,169,255,0.15); color: var(--brand); border: 1px solid rgba(90,169,255,0.3); }
+        .bg-ok { background: rgba(16,185,129,0.15); color: var(--ok); border: 1px solid rgba(16,185,129,0.3); }
+
+        .inline-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 0.5rem; }
+        .empty { border: 2px dashed var(--line); border-radius: 14px; padding: 3rem 1rem; text-align: center; color: var(--muted); }
+        
+        /* Collapsible Form */
+        .add-form-container { background: rgba(0,0,0,0.2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; transition: max-height 0.3s ease; }
+        .add-form-header { padding: 1rem; cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); }
+        .add-form-header:hover { background: rgba(255,255,255,0.05); }
+        .add-form-body { padding: 1rem; border-top: 1px solid var(--line); }
+        
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); background: #1a2942; border: 1px solid var(--brand); border-radius: 999px; padding: .8rem 1.5rem; opacity: 0; transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; z-index: 1000; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.5); color: #fff; }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        /* Confetti Canvas */
+        #confetti-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; overflow: hidden; }
+        .confetti-piece { position: absolute; width: 10px; height: 10px; border-radius: 2px; opacity: 0; }
+
+        @media (max-width: 900px) { 
+            .grid { grid-template-columns: 1fr; } 
+            .hud-timer { position: relative; top: 0; margin-bottom: 2rem; }
+            .list { display: flex; flex-direction: column; } /* Required for flex 'order' property to work on completed cards */
+        }
     </style>
 </head>
 <body>
+<div id="confetti-container"></div>
 <div class="app">
     <header>
         <div class="header-row">
             <div>
-                <h1 class="title">Higher Study Planner Pro</h1>
-                <p class="subtitle">A-Grade Strategy Dashboard • Goal: 3h Daily Focus</p>
+                <h1 class="title">Higher Command Center</h1>
+                <p class="subtitle">A-Grade Strategy • 3h Daily Focus</p>
             </div>
-            <div class="sync" id="syncStatus">Sync: connecting…</div>
+            <div class="sync" id="syncStatus">Syncing...</div>
         </div>
         <div class="progress-shell"><div class="progress-bar" id="progressBar"></div></div>
         <p class="progress-text" id="progressText">0% readiness achieved</p>
-        <div class="tabs" role="tablist" aria-label="Main sections">
-            <button class="tab-btn active" data-tab="sessions" role="tab" aria-selected="true">Study Sessions</button>
-            <button class="tab-btn" data-tab="exams" role="tab" aria-selected="false">Exams Tracker</button>
-            <button class="tab-btn" data-tab="calendar" role="tab" aria-selected="false">Calendar</button>
-            <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+        <div class="tabs" role="tablist">
+            <button class="tab-btn active" data-tab="sessions" role="tab">📚 Study Sessions</button>
+            <button class="tab-btn" data-tab="exams" role="tab">🎯 Exams Tracker</button>
+            <button class="tab-btn" data-tab="settings" role="tab">⚙️ Settings</button>
         </div>
     </header>
 
     <section class="grid" id="tab-sessions" role="tabpanel">
-        <div class="panel">
-            <h2>The Daily Mission</h2>
-            <div class="controls">
-                <input id="sessionSearch" type="search" placeholder="Search sessions...">
-                <select id="sessionSubjectFilter"></select>
+        <div style="display: flex; flex-direction: column;">
+            
+            <div id="pillContainer" class="pill-group">
+                <div class="pill active" data-filter="all">All Subjects</div>
+                </div>
+
+            <div class="controls" style="grid-template-columns: 2fr 1fr;">
+                <input id="sessionSearch" type="search" placeholder="Search notes or topics...">
                 <select id="sessionSort">
-                    <option value="upcoming">Sort: Upcoming first</option>
-                    <option value="today">Sort: Today first</option>
-                    <option value="subject">Sort: Subject grouping</option>
+                    <option value="upcoming">Upcoming First</option>
+                    <option value="today">Today First</option>
                 </select>
             </div>
-            <div id="todayEmptyState" class="empty hidden" aria-live="polite"></div>
-            <div id="sessionList" class="list"></div>
+            
+            <div id="todayEmptyState" class="empty hidden"></div>
+            
+            <div id="sessionList" class="list" style="display: flex; flex-direction: column;"></div>
         </div>
 
-        <aside class="panel">
-            <div class="timer-box" style="margin-bottom:1.5rem;">
-                <h3 style="margin:0 0 .2rem;">Focus Timer</h3>
-                <p class="meta" id="focusStatus">Ready</p>
+        <aside>
+            <div id="hudTimer" class="hud-timer">
+                <div id="hudTarget" class="hud-target">Global Focus Mode</div>
                 <div class="timer-time" id="focusDisplay">03:00:00</div>
-                <div class="inline-actions" style="justify-content:center;">
-                    <button id="focusToggleBtn" class="primary">Start</button>
-                    <button id="focusResetBtn">Reset</button>
-                    <button id="focus25Btn" type="button">25m</button>
-                    <button id="focus180Btn" type="button">3h</button>
+                <div class="meta" id="focusStatus" style="margin-top:0.5rem;">Ready</div>
+                <div class="hud-controls">
+                    <button id="focusToggleBtn" class="primary" style="flex:1;">▶ Start</button>
+                    <button id="focusResetBtn" style="background: rgba(255,255,255,0.1); border:none;">Reset</button>
+                </div>
+                <div class="hud-controls" style="margin-top: 0.5rem; gap:0.5rem;">
+                    <button id="focus25Btn" style="flex:1; padding:0.4rem; font-size:0.8rem;">25m Pomodoro</button>
+                    <button id="focus180Btn" style="flex:1; padding:0.4rem; font-size:0.8rem;">3h Exam Block</button>
                 </div>
             </div>
 
-            <h3>Add Custom Block</h3>
-            <form id="sessionForm">
-                <div class="controls">
-                    <input required id="sessionTitle" placeholder="Session title">
-                    <select id="sessionSubject" required>
-                        <option>English</option><option>Mathematics</option><option>Chemistry</option><option>Computing</option><option>Physics</option><option>Other</option>
-                    </select>
-                    <input required id="sessionDateTime" type="datetime-local">
-                    <input required id="sessionDuration" type="number" min="5" max="720" step="5" placeholder="Duration (mins)">
+            <div class="add-form-container">
+                <div class="add-form-header" onclick="document.getElementById('addFormBody').classList.toggle('hidden')">
+                    <span>➕ Add Custom Block</span>
+                    <span style="color:var(--muted); font-size:0.8rem;">Click to expand</span>
                 </div>
-                <textarea id="sessionNotes" placeholder="Description / notes"></textarea>
-                <div class="inline-actions" style="margin-top: 0.5rem;">
-                    <button class="primary" style="flex:1;" type="submit">+ Add Session</button>
-                    <button type="button" id="quickAddTodayBtn">Quick 3h (Today)</button>
+                <div id="addFormBody" class="add-form-body hidden">
+                    <form id="sessionForm">
+                        <div style="display:grid; gap:0.8rem;">
+                            <input required id="sessionTitle" placeholder="Session title (e.g. Past Paper)">
+                            <select id="sessionSubject" required>
+                                <option>English</option><option>Mathematics</option><option>Chemistry</option><option>Computing</option><option>Physics</option><option>Other</option>
+                            </select>
+                            <input required id="sessionDateTime" type="datetime-local">
+                            <input required id="sessionDuration" type="number" min="5" max="720" step="5" placeholder="Duration (mins)">
+                            <textarea id="sessionNotes" placeholder="Specific focus or notes..."></textarea>
+                            <button class="primary" type="submit">+ Add Session</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </aside>
     </section>
 
     <section class="grid hidden" id="tab-exams" role="tabpanel">
         <div class="panel">
             <h2>Upcoming Exams</h2>
-            <div class="controls">
-                <input id="examSearch" type="search" placeholder="Search exams...">
-                <select id="examSubjectFilter"></select>
-                <select id="examSort">
-                    <option value="upcoming">Sort: Upcoming first</option>
-                    <option value="subject">Sort: Subject grouping</option>
-                </select>
-            </div>
             <div id="examList" class="list"></div>
         </div>
         <aside class="panel">
             <h3>Add Missing Exam</h3>
             <form id="examForm">
-                <div class="controls">
-                    <select required id="examSubject">
-                        <option>English</option><option>Mathematics</option><option>Chemistry</option><option>Computing</option><option>Physics</option><option>Other</option>
-                    </select>
+                <div style="display:grid; gap:0.8rem;">
+                    <select required id="examSubject"><option>English</option><option>Mathematics</option><option>Chemistry</option><option>Computing</option><option>Physics</option><option>Other</option></select>
                     <input required id="examDateTime" type="datetime-local">
-                    <input required id="examDuration" type="number" min="10" max="600" step="5" placeholder="Length (mins)">
+                    <input required id="examDuration" type="number" placeholder="Length (mins)">
+                    <textarea id="examDescription" placeholder="Paper details"></textarea>
+                    <button class="primary" type="submit">+ Add Exam</button>
                 </div>
-                <textarea id="examDescription" placeholder="Paper details (e.g., Paper 1 Multiple Choice)"></textarea>
-                <textarea id="examThoughts" placeholder="Post-exam reflection"></textarea>
-                <div class="inline-actions" style="margin-top: 0.5rem;"><button class="primary" style="width:100%;" type="submit">+ Add Exam</button></div>
             </form>
         </aside>
     </section>
 
-    <section class="panel hidden" id="tab-calendar" role="tabpanel">
-        <div class="card-top" style="margin-bottom: 1rem;">
-            <h2 style="margin:0;">Master Calendar</h2>
-            <div class="inline-actions">
-                <button id="prevMonthBtn" type="button">◀ Prev</button>
-                <div class="badge" id="calendarMonthLabel" style="font-size: 1rem; padding: 0.4rem 1rem;"></div>
-                <button id="nextMonthBtn" type="button">Next ▶</button>
-            </div>
-        </div>
-        <div class="calendar-grid" id="calendarGrid"></div>
-        <div class="panel" style="margin-top:1rem; background: #0f192e;">
-            <h3 style="margin-top:0; border-bottom: 1px solid var(--line); padding-bottom: 0.5rem;">Selected Day Itinerary</h3>
-            <div id="calendarDayDetails" class="meta" style="margin-top: 0.5rem;">Pick a date to inspect sessions and exams.</div>
-        </div>
-    </section>
-
     <section class="panel hidden" id="tab-settings" role="tabpanel">
-        <h2>App Settings & Data</h2>
+        <h2>Settings & Data</h2>
         <div class="controls">
-            <select id="timeFormatSelect">
-                <option value="24">24-hour time formatting</option>
-                <option value="12">12-hour time formatting (AM/PM)</option>
-            </select>
-            <input id="defaultFocusMinutes" type="number" min="5" max="360" step="5" placeholder="Default focus timer (mins)">
+            <select id="timeFormatSelect"><option value="24">24-hour time</option><option value="12">12-hour time (AM/PM)</option></select>
+            <input id="defaultFocusMinutes" type="number" placeholder="Default global timer (mins)">
             <button id="saveSettingsBtn" class="primary" type="button">Save Settings</button>
         </div>
-        <div class="inline-actions" style="margin: 1.5rem 0; border-top: 1px solid var(--line); padding-top: 1.5rem;">
-            <button id="exportBtn" type="button">⬇️ Export Backup (JSON)</button>
-            <label style="display:inline-flex;align-items:center;gap:.45rem;border:1px solid var(--line);border-radius:8px;padding:.55rem .75rem;background:#12213d;cursor:pointer;transition:background 0.2s;">
-                ⬆️ Import Backup
-                <input id="importInput" type="file" accept="application/json" style="display:none;">
-            </label>
+        <div class="inline-actions" style="margin-top:2rem;">
+            <button id="exportBtn" type="button">⬇️ Export Backup</button>
         </div>
-        <ul class="help" style="background: #0d1629; padding: 1.5rem 2.5rem; border-radius: 10px; border: 1px solid var(--line);">
-            <li><strong>UX Upgrade:</strong> Active timers now highlight the session card. Completed cards drop to the bottom.</li>
-            <li><strong>Flexible Date Lock:</strong> Sessions can now be completed at any point *during* their scheduled day, allowing flexibility if you study earlier than planned.</li>
-            <li><strong>Timer Safety:</strong> Active timers will automatically pause if a major clock drift or timezone jump is detected.</li>
-            <li><strong>Keyboard Shortcuts:</strong> Alt+Shift+T (Toggle Timer), Alt+Shift+N (Sessions Tab), Alt+Shift+E (Exams Tab).</li>
-        </ul>
     </section>
 </div>
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="toast" class="toast" role="status"></div>
 
 <script>
     const firebaseConfig = { apiKey: "AIzaSyBojGtfnEB3aj4my_QBRBD5rTrshSXTjag", authDomain: "higherexams.firebaseapp.com", projectId: "higherexams", storageBucket: "higherexams.firebasestorage.app", messagingSenderId: "768134563319", appId: "1:768134563319:web:2e1729cedf42f42683daf2" };
-    const STORAGE_KEY = 'higher-state-v4';
-    const TOAST_MS = 2600;
-    const HOUR_MS = 60 * 60 * 1000;
-    const DAY_MS = 24 * HOUR_MS;
-    const MIN_FOCUS_SECONDS = 5 * 60;
-    const CLOCK_DRIFT_MS = 5 * 60 * 1000;
-    const SYNC_THROTTLE_MS = 1200;
-
+    const STORAGE_KEY = 'higher-state-v4'; // Keeping v4 to preserve your data
+    
     let docRef = null;
     if (window.firebase && typeof window.firebase.initializeApp === 'function') {
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        docRef = db.collection('studyData').doc('appState');
+        docRef = firebase.firestore().collection('studyData').doc('appState');
     }
 
     const randomId = prefix => `${prefix}-${Math.random().toString(36).slice(2, 9)}-${Date.now().toString(36)}`;
     const safeParse = (raw, fallback) => { try { return raw ? JSON.parse(raw) : fallback; } catch { return fallback; } };
     const dayKeyFromMs = ms => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-    const parseLocalDateTime = value => { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? null : parsed.getTime(); };
     const formatDuration = s => { const t = Math.max(0, Math.floor(s)); return `${String(Math.floor(t / 3600)).padStart(2, '0')}:${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
-    const toISODateTimeLocal = ms => { const d = new Date(ms), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
-    const getDeviceId = () => { const k = 'higher-device-id'; const v = localStorage.getItem(k); if (v) return v; const next = randomId('device'); localStorage.setItem(k, next); return next; };
-    const deviceId = getDeviceId();
+    const deviceId = localStorage.getItem('higher-device-id') || (()=>{ const id = randomId('dev'); localStorage.setItem('higher-device-id', id); return id;})();
 
     let state;
     let toastTimer = null;
     let suppressRemoteApply = false;
-    let lastSyncAt = 0;
     let activeTab = 'sessions';
-    let selectedDayKey = null;
-    let currentCalendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    let lastObservedNow = null;
-    let lastDriftCheckAt = 0;
+    let currentFilter = 'all';
 
-    const showToast = message => { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), TOAST_MS); };
-    
-    // UX FIX: Allow completion if we are on the same day as the schedule, rather than exact minute.
-    const canCompleteByDate = startAtMs => {
-        const todayStr = dayKeyFromMs(Date.now());
-        const startStr = dayKeyFromMs(startAtMs);
-        return todayStr >= startStr;
-    };
-
-    function formatDateTime(ms) {
-        const hour12 = (state?.settings?.timeFormat || '24') === '12';
-        return new Date(ms).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: hour12 ? 'numeric' : '2-digit', minute: '2-digit', hour12 });
+    // UX Upgrade: Visual Celebration
+    function fireConfetti() {
+        const container = document.getElementById('confetti-container');
+        const colors = ['#5aa9ff', '#10b981', '#d946ef', '#f59e0b', '#ffffff'];
+        for(let i=0; i<60; i++) {
+            const conf = document.createElement('div');
+            conf.className = 'confetti-piece';
+            conf.style.left = Math.random() * 100 + 'vw';
+            conf.style.top = '-20px';
+            conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+            container.appendChild(conf);
+            
+            const duration = Math.random() * 2 + 1;
+            conf.animate([
+                { transform: `translate3d(0,0,0) rotate(0deg)`, opacity: 1 },
+                { transform: `translate3d(${Math.random()*200 - 100}px, 100vh, 0) rotate(${Math.random()*720}deg)`, opacity: 0 }
+            ], { duration: duration * 1000, easing: 'cubic-bezier(.37,0,.63,1)' });
+            setTimeout(() => conf.remove(), duration * 1000);
+        }
     }
 
-    function normalizeSession(raw) {
-        const startAtMs = Number(raw.startAtMs), durationMinutes = Number(raw.durationMinutes), elapsedSeconds = Number(raw.elapsedSeconds) || 0;
-        return { id: typeof raw.id === 'string' ? raw.id : randomId('session'), title: String(raw.title || 'Study session').slice(0, 160), subject: String(raw.subject || 'Other').slice(0, 60), startAtMs: Number.isFinite(startAtMs) ? startAtMs : Date.now(), durationMinutes: Number.isFinite(durationMinutes) && durationMinutes > 0 ? durationMinutes : 180, notes: String(raw.notes || '').slice(0, 3000), completed: raw.completed === true, completedAtMs: Number(raw.completedAtMs) || null, elapsedSeconds: Math.max(0, Math.floor(elapsedSeconds)), timerRunning: raw.timerRunning === true, timerStartedAtMs: Number(raw.timerStartedAtMs) || null, manualOverride: raw.manualOverride === true };
-    }
-
-    function normalizeExam(raw) {
-        const dt = Number(raw.dateTimeMs), durationMinutes = Number(raw.durationMinutes);
-        return { id: typeof raw.id === 'string' ? raw.id : randomId('exam'), subject: String(raw.subject || 'Other').slice(0, 60), dateTimeMs: Number.isFinite(dt) ? dt : Date.now(), durationMinutes: Number.isFinite(durationMinutes) && durationMinutes > 0 ? durationMinutes : 120, description: String(raw.description || '').slice(0, 3000), afterThoughts: String(raw.afterThoughts || '').slice(0, 3000) };
-    }
+    const showToast = message => { const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2600); };
+    const canCompleteByDate = startAtMs => dayKeyFromMs(Date.now()) >= dayKeyFromMs(startAtMs);
+    function formatDateTime(ms) { const h12 = (state?.settings?.timeFormat || '24') === '12'; return new Date(ms).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: h12 ? 'numeric' : '2-digit', minute: '2-digit', hour12: h12 }); }
 
     function defaultState() {
         return {
-            schemaVersion: 4,
-            deviceId, updatedAt: Date.now(),
+            schemaVersion: 4, deviceId, updatedAt: Date.now(),
             settings: { timeFormat: '24', defaultFocusMinutes: 180 },
             sessions: [
-                // Front-loaded 3h A-Grade Strategy
                 { id: randomId('session'), title: 'Essay Adaptation Practice', subject: 'English', startAtMs: new Date('2026-04-22T18:00:00').getTime(), durationMinutes: 180, notes: 'Twist quotes to prompt.', completed: false },
                 { id: randomId('session'), title: 'RUAE Timed Past Paper', subject: 'English', startAtMs: new Date('2026-04-23T18:00:00').getTime(), durationMinutes: 180, notes: 'Full timed conditions.', completed: false },
                 { id: randomId('session'), title: 'Non-Calc Drills', subject: 'Mathematics', startAtMs: new Date('2026-04-24T18:00:00').getTime(), durationMinutes: 180, notes: 'Target weak topics.', completed: false },
-                { id: randomId('session'), title: 'Quote Bank Active Recall', subject: 'English', startAtMs: new Date('2026-04-25T18:00:00').getTime(), durationMinutes: 180, notes: 'Flashcard mastery.', completed: false },
-                { id: randomId('session'), title: 'Data Booklet Mastery', subject: 'Chemistry', startAtMs: new Date('2026-04-26T18:00:00').getTime(), durationMinutes: 180, notes: 'Subject warmup phase.', completed: false },
-                { id: randomId('session'), title: 'Full Essay Timed', subject: 'English', startAtMs: new Date('2026-04-27T18:00:00').getTime(), durationMinutes: 180, notes: '', completed: false },
-                { id: randomId('session'), title: 'Web/Database Design', subject: 'Computing', startAtMs: new Date('2026-04-28T18:00:00').getTime(), durationMinutes: 180, notes: 'Subject warmup phase.', completed: false },
-                { id: randomId('session'), title: 'Physics Warmup & Formulas', subject: 'Physics', startAtMs: new Date('2026-04-29T18:00:00').getTime(), durationMinutes: 180, notes: 'Subject warmup phase.', completed: false },
-                { id: randomId('session'), title: 'Final Pre-Exam Review', subject: 'English', startAtMs: new Date('2026-04-30T18:00:00').getTime(), durationMinutes: 180, notes: 'Day before the exam.', completed: false },
-                { id: randomId('session'), title: 'Heavy Calculator Qs', subject: 'Mathematics', startAtMs: new Date('2026-05-02T18:00:00').getTime(), durationMinutes: 180, notes: 'P2 Focus.', completed: false },
-                { id: randomId('session'), title: 'Multiple Choice Focus', subject: 'Chemistry', startAtMs: new Date('2026-05-03T18:00:00').getTime(), durationMinutes: 180, notes: '', completed: false },
-                { id: randomId('session'), title: 'Past Paper Focus', subject: 'Mathematics', startAtMs: new Date('2026-05-04T18:00:00').getTime(), durationMinutes: 180, notes: '', completed: false },
-                { id: randomId('session'), title: 'SQA Logic Analysis', subject: 'Mathematics', startAtMs: new Date('2026-05-05T18:00:00').getTime(), durationMinutes: 180, notes: 'Analyze marking schemes.', completed: false },
-                { id: randomId('session'), title: 'Final Pre-Exam Review', subject: 'Mathematics', startAtMs: new Date('2026-05-06T18:00:00').getTime(), durationMinutes: 180, notes: 'Day before the exam.', completed: false },
-            ].map(normalizeSession),
-            exams: [
-                // Repopulated actual SQA Timetable based on context
-                { id: randomId('exam'), subject: 'English', dateTimeMs: new Date('2026-05-01T09:00:00').getTime(), durationMinutes: 90, description: 'Reading for Understanding, Analysis and Evaluation (Higher)', afterThoughts: '' },
-                { id: randomId('exam'), subject: 'English', dateTimeMs: new Date('2026-05-01T11:00:00').getTime(), durationMinutes: 105, description: 'Critical Reading (Higher)', afterThoughts: '' },
-                { id: randomId('exam'), subject: 'Mathematics', dateTimeMs: new Date('2026-05-07T09:00:00').getTime(), durationMinutes: 75, description: 'Paper 1 Non-calculator (Higher)', afterThoughts: '' },
-                { id: randomId('exam'), subject: 'Mathematics', dateTimeMs: new Date('2026-05-07T10:45:00').getTime(), durationMinutes: 90, description: 'Paper 2 (Higher)', afterThoughts: '' },
-                { id: randomId('exam'), subject: 'Chemistry', dateTimeMs: new Date('2026-05-12T09:00:00').getTime(), durationMinutes: 40, description: 'Paper 1 Multiple Choice (Higher)', afterThoughts: '' },
-                { id: randomId('exam'), subject: 'Chemistry', dateTimeMs: new Date('2026-05-12T10:10:00').getTime(), durationMinutes: 140, description: 'Paper 2 (Higher)', afterThoughts: '' },
-                { id: randomId('exam'), subject: 'Computing', dateTimeMs: new Date('2026-05-20T09:00:00').getTime(), durationMinutes: 120, description: 'Computing Science (Higher)', afterThoughts: '' },
-                { id: randomId('exam'), subject: 'Physics', dateTimeMs: new Date('2026-05-21T09:00:00').getTime(), durationMinutes: 45, description: 'Paper 1 Multiple Choice (Higher)', afterThoughts: '' },
-                { id: randomId('exam'), subject: 'Physics', dateTimeMs: new Date('2026-05-21T10:15:00').getTime(), durationMinutes: 135, description: 'Paper 2 (Higher)', afterThoughts: '' }
+                { id: randomId('session'), title: 'Data Booklet Mastery', subject: 'Chemistry', startAtMs: new Date('2026-04-26T18:00:00').getTime(), durationMinutes: 180, notes: 'Subject warmup phase.', completed: false }
             ],
-            focusTimer: { isRunning: false, remainingSeconds: 10800, targetEndMs: null, lastChangedAt: Date.now() },
-            syncMeta: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }
+            exams: [
+                { id: randomId('exam'), subject: 'English', dateTimeMs: new Date('2026-05-01T09:00:00').getTime(), durationMinutes: 90, description: 'RUAE' },
+                { id: randomId('exam'), subject: 'English', dateTimeMs: new Date('2026-05-01T11:00:00').getTime(), durationMinutes: 105, description: 'Critical Reading' }
+            ],
+            focusTimer: { isRunning: false, remainingSeconds: 10800, targetEndMs: null }
         };
     }
 
-    function normalizeState(raw) {
-        const base = defaultState(), settings = raw?.settings || {}, focusRaw = raw?.focusTimer || {};
-        return {
-            schemaVersion: 4, deviceId, updatedAt: Number(raw?.updatedAt) || Date.now(),
-            settings: { timeFormat: settings.timeFormat === '12' ? '12' : '24', defaultFocusMinutes: Number.isFinite(Number(settings.defaultFocusMinutes)) && Number(settings.defaultFocusMinutes) >= 5 && Number(settings.defaultFocusMinutes) <= 360 ? Number(settings.defaultFocusMinutes) : base.settings.defaultFocusMinutes },
-            sessions: Array.isArray(raw?.sessions) && raw.sessions.length > 0 ? raw.sessions.map(normalizeSession) : base.sessions,
-            exams: Array.isArray(raw?.exams) && raw.exams.length > 0 ? raw.exams.map(normalizeExam) : base.exams,
-            focusTimer: { isRunning: focusRaw.isRunning === true, remainingSeconds: Number.isFinite(Number(focusRaw.remainingSeconds)) ? Math.max(0, Math.floor(Number(focusRaw.remainingSeconds))) : base.focusTimer.remainingSeconds, targetEndMs: Number(focusRaw.targetEndMs) || null, lastChangedAt: Number(focusRaw.lastChangedAt) || Date.now() },
-            syncMeta: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' }
-        };
-    }
+    state = safeParse(localStorage.getItem(STORAGE_KEY), defaultState());
+    if(!state.sessions) state = defaultState(); // Fallback
 
-    state = normalizeState(safeParse(localStorage.getItem(STORAGE_KEY), null));
     const saveLocalState = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    const getSessionElapsedSeconds = (session, now = Date.now()) => Math.max(0, (Number(session.elapsedSeconds) || 0) + (session.timerRunning && session.timerStartedAtMs ? Math.floor(Math.max(0, now - session.timerStartedAtMs) / 1000) : 0));
-    
-    function completeSessionIfNeeded(session, now = Date.now()) {
-        if (session.completed) return false;
-        if (getSessionElapsedSeconds(session, now) < session.durationMinutes * 60) return false;
-        session.completed = true; session.completedAtMs = now; session.timerRunning = false; session.timerStartedAtMs = null; session.elapsedSeconds = session.durationMinutes * 60; session.manualOverride = false;
-        return true;
+    const getSessionElapsedSeconds = (s, now = Date.now()) => Math.max(0, (Number(s.elapsedSeconds) || 0) + (s.timerRunning && s.timerStartedAtMs ? Math.floor(Math.max(0, now - s.timerStartedAtMs) / 1000) : 0));
+
+    function syncCloud() {
+        if (!docRef) return;
+        state.updatedAt = Date.now();
+        docRef.set({ ...state, deviceId }).catch(() => document.getElementById('syncStatus').textContent = 'Offline Mode');
     }
 
-    function syncCloud(force = false) {
-        const now = Date.now();
-        if (!docRef || typeof docRef.set !== 'function') { document.getElementById('syncStatus').textContent = 'Sync: Local Only'; return; }
-        if (!force && now - lastSyncAt < SYNC_THROTTLE_MS) return;
-        lastSyncAt = now;
-        const payload = { ...state, updatedAt: Date.now(), deviceId };
-        state.updatedAt = payload.updatedAt;
-        docRef.set(payload).then(() => { document.getElementById('syncStatus').textContent = `Sync: Live • ${new Date().toLocaleTimeString()}`; }).catch(() => { document.getElementById('syncStatus').textContent = 'Sync: Reconnecting'; showToast('Cloud sync unavailable; local changes saved.'); });
+    if (docRef) {
+        docRef.onSnapshot(doc => {
+            if (doc.exists && doc.data().updatedAt > state.updatedAt) {
+                suppressRemoteApply = true; state = doc.data(); saveLocalState(); renderAll(); suppressRemoteApply = false;
+            }
+        });
     }
 
-    function applyRemoteState(remote) {
-        if (!remote || Number(remote.updatedAt) <= Number(state.updatedAt)) return;
-        suppressRemoteApply = true; state = normalizeState(remote); saveLocalState(); renderAll(); suppressRemoteApply = false;
+    function updateState(mutator) { mutator(state); state.updatedAt = Date.now(); saveLocalState(); renderAll(); if (!suppressRemoteApply) syncCloud(); }
+
+    function renderSubjectPills() {
+        const subjects = [...new Set([...state.sessions.map(s => s.subject)])].sort();
+        const container = document.getElementById('pillContainer');
+        let html = `<div class="pill ${currentFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">All</div>`;
+        subjects.forEach(sub => { html += `<div class="pill ${currentFilter === sub ? 'active' : ''}" onclick="setFilter('${sub}')">${sub}</div>`; });
+        container.innerHTML = html;
+    }
+    window.setFilter = (sub) => { currentFilter = sub; renderAll(); };
+
+    function renderSessions() {
+        const list = document.getElementById('sessionList');
+        const search = document.getElementById('sessionSearch').value.toLowerCase();
+        let sessions = state.sessions.filter(s => (!search || s.title.toLowerCase().includes(search)) && (currentFilter === 'all' || s.subject === currentFilter));
+        
+        // Push completed to bottom naturally via order
+        sessions.sort((a, b) => a.startAtMs - b.startAtMs);
+
+        if (sessions.length === 0) { list.innerHTML = '<div class="empty">No sessions match your filters.</div>'; return; }
+
+        list.innerHTML = sessions.map(s => {
+            const unlocked = canCompleteByDate(s.startAtMs), elapsed = getSessionElapsedSeconds(s), planned = s.durationMinutes * 60;
+            let cardClass = 'card';
+            let orderStyle = '';
+            
+            if (s.completed) { cardClass += ' completed'; orderStyle = 'order: 99;'; } // CSS Order forces to bottom of flex container
+            else if (s.timerRunning) { cardClass += ' active-timer'; orderStyle = 'order: -1;'; } // Pull active to top
+            
+            const btnComplete = `<button type="button" data-action="complete" data-id="${s.id}" class="ok" ${!unlocked && !s.completed ? 'disabled' : ''}>${s.completed ? 'Undo' : '✓ Complete'}</button>`;
+            const btnTimer = actionButton(s.timerRunning ? 'stop' : 'start', s.id, s.timerRunning ? '⏸ Pause' : '▶ Start Timer', s.timerRunning ? 'bg-neutral' : 'primary');
+
+            return `<article class="${cardClass}" style="${orderStyle}">
+                <div class="card-top">
+                    <div>
+                        <div class="card-title">${s.title}</div>
+                        <div class="meta">📚 ${s.subject} &nbsp;•&nbsp; 📅 ${formatDateTime(s.startAtMs)}</div>
+                    </div>
+                    ${s.completed ? '<span class="badge bg-ok">✓ Done</span>' : (s.timerRunning ? '<span class="badge bg-active">Live</span>' : '')}
+                </div>
+                ${s.notes ? `<div class="meta" style="color:#cbd5e1; background:rgba(0,0,0,0.2); padding:0.5rem; border-radius:6px;">${s.notes}</div>` : ''}
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:auto;">
+                    <div class="meta"><strong style="color:var(--text);">${formatDuration(elapsed)}</strong> / ${s.durationMinutes}m</div>
+                    <div class="inline-actions">${btnTimer} ${btnComplete}</div>
+                </div>
+            </article>`;
+        }).join('');
     }
 
-    function subscribeCloud() {
-        if (!docRef || typeof docRef.onSnapshot !== 'function') return;
-        docRef.onSnapshot(doc => { if (!doc.exists) { syncCloud(true); return; } applyRemoteState(doc.data()); }, () => { document.getElementById('syncStatus').textContent = 'Sync: Local Fallback'; });
-    }
+    function renderHUDTimer() {
+        const hud = document.getElementById('hudTimer');
+        const display = document.getElementById('focusDisplay');
+        const target = document.getElementById('hudTarget');
+        const status = document.getElementById('focusStatus');
+        const btn = document.getElementById('focusToggleBtn');
 
-    function updateState(mutator, options = { sync: true }) {
-        mutator(state); state.updatedAt = Date.now(); saveLocalState(); renderAll(); if (!suppressRemoteApply && options.sync !== false) syncCloud();
+        // Check if ANY specific session is currently running
+        const activeSession = state.sessions.find(s => s.timerRunning && !s.completed);
+        
+        if (activeSession) {
+            hud.classList.add('active-glow');
+            target.textContent = `Tracking: ${activeSession.title}`;
+            target.style.color = 'var(--brand)';
+            const elapsed = getSessionElapsedSeconds(activeSession);
+            display.textContent = formatDuration(elapsed);
+            status.textContent = 'Session tracking live...';
+            btn.textContent = '⏸ Pause Session';
+            btn.onclick = () => stopSessionTimer(activeSession.id);
+        } else {
+            hud.classList.remove('active-glow');
+            target.textContent = 'Global Focus Timer';
+            target.style.color = 'var(--muted)';
+            display.textContent = formatDuration(state.focusTimer.remainingSeconds);
+            status.textContent = state.focusTimer.isRunning ? 'Focus mode active' : 'Ready to start';
+            btn.textContent = state.focusTimer.isRunning ? '⏸ Pause' : '▶ Start Focus';
+            btn.onclick = () => toggleGlobalTimer();
+        }
     }
 
     function renderProgress() {
         const total = state.sessions.length || 1, done = state.sessions.filter(s => s.completed).length, pct = Math.round((done / total) * 100);
         document.getElementById('progressBar').style.width = `${pct}%`;
-        document.getElementById('progressText').textContent = `${pct}% Readiness Achieved (${done}/${state.sessions.length} sessions)`;
+        document.getElementById('progressText').textContent = `${pct}% Readiness (${done}/${state.sessions.length})`;
     }
 
-    function renderSubjectFilters() {
-        const subjects = [...new Set([...state.sessions.map(s => s.subject), ...state.exams.map(e => e.subject)])].sort();
-        const options = ['<option value="all">All Subjects</option>', ...subjects.map(s => `<option value="${s}">${s}</option>`)].join('');
-        const sf = document.getElementById('sessionSubjectFilter'), ef = document.getElementById('examSubjectFilter');
-        const sv = sf.value || 'all', ev = ef.value || 'all';
-        sf.innerHTML = options; ef.innerHTML = options;
-        sf.value = subjects.includes(sv) ? sv : 'all'; ef.value = subjects.includes(ev) ? ev : 'all';
-    }
+    function renderAll() { renderSubjectPills(); renderSessions(); renderHUDTimer(); renderProgress(); }
 
-    function sortSessions(sessions, sort) {
-        // UX UPGRADE: Always push completed items to the bottom, regardless of other sort options.
-        sessions.sort((a, b) => {
-            if (a.completed !== b.completed) return a.completed ? 1 : -1;
-            
-            if (sort === 'subject') return a.subject.localeCompare(b.subject) || a.startAtMs - b.startAtMs;
-            if (sort === 'today') {
-                const todayKey = dayKeyFromMs(Date.now());
-                const aToday = dayKeyFromMs(a.startAtMs) === todayKey ? 0 : 1;
-                const bToday = dayKeyFromMs(b.startAtMs) === todayKey ? 0 : 1;
-                return aToday - bToday || a.startAtMs - b.startAtMs;
-            }
-            return a.startAtMs - b.startAtMs;
-        });
-    }
+    function actionButton(act, id, label, cls) { return `<button type="button" data-action="${act}" data-id="${id}" class="${cls}">${label}</button>`; }
 
-    function actionButton(action, id, label, className = '', disabled = false) {
-        return `<button type="button" data-session-action="${action}" data-session-id="${id}" class="${className}" ${disabled ? 'disabled' : ''}>${label}</button>`;
-    }
-
-    function renderSessions() {
-        const list = document.getElementById('sessionList');
-        const search = document.getElementById('sessionSearch').value.trim().toLowerCase();
-        const subject = document.getElementById('sessionSubjectFilter').value;
-        const sort = document.getElementById('sessionSort').value;
-        let sessions = state.sessions.filter(s => (!search || `${s.title} ${s.subject} ${s.notes}`.toLowerCase().includes(search)) && (subject === 'all' || s.subject === subject));
-        sortSessions(sessions, sort);
-
-        const empty = document.getElementById('todayEmptyState');
-        const todayCount = state.sessions.filter(s => dayKeyFromMs(s.startAtMs) === dayKeyFromMs(Date.now())).length;
-        if (todayCount === 0) {
-            empty.classList.remove('hidden');
-            empty.innerHTML = 'No study session is scheduled for today. <br><br> <button class="primary" type="button" data-empty-action="quick-add-today">+ Add a 3-hour session today</button>';
-        } else {
-            empty.classList.add('hidden');
-            empty.textContent = '';
-        }
-        
-        if (sessions.length === 0) { list.innerHTML = '<div class="empty">No sessions match your filters yet.</div>'; return; }
-
-        list.innerHTML = sessions.map(s => {
-            const unlocked = canCompleteByDate(s.startAtMs), elapsed = getSessionElapsedSeconds(s), planned = s.durationMinutes * 60;
-            const status = s.completed ? '<span class="badge status-ok">✓ Completed</span>' : (unlocked ? '<span class="badge" style="color:#5aa9ff; border-color:#5aa9ff; background:rgba(90,169,255,0.1);">In progress</span>' : '<span class="badge status-lock" title="Cannot complete before scheduled date">Scheduled</span>');
-            const lockMsg = !unlocked && !s.completed ? `<div class="meta" style="color:var(--warn)">🔒 Unlocks for completion on ${formatDateTime(s.startAtMs)}.</div>` : '';
-            const completeDisabled = !unlocked && !s.completed;
-            
-            // UX UPGRADE: Apply visual classes for active timers and completed states
-            let cardClass = 'card';
-            if (s.completed) cardClass += ' completed';
-            if (s.timerRunning) cardClass += ' active-timer';
-
-            const buttons = [
-                actionButton('start', s.id, '▶ Start', 'primary', s.completed || s.timerRunning),
-                actionButton('stop', s.id, '⏸ Pause', '', !s.timerRunning),
-                `<button type="button" data-session-action="complete" data-session-id="${s.id}" class="ok" ${completeDisabled ? 'disabled' : ''}>${s.completed ? 'Undo Complete' : '✓ Complete'}</button>`,
-            ].join('');
-
-            return `<article class="${cardClass}">
-                <div class="card-top">
-                    <div><strong style="font-size:1.1rem; color:var(--text);">${s.title}</strong> <span class="meta">• ${s.subject}</span><div class="meta" style="margin-top:0.2rem;">📅 ${formatDateTime(s.startAtMs)} • ⏱️ ${s.durationMinutes}m</div></div>
-                    ${status}
-                </div>
-                <div class="meta" style="color:#cbd5e1;">${s.notes || ''}</div>
-                ${lockMsg}
-                <div class="meta" style="margin-top:0.3rem;"><strong>Session Timer:</strong> <span style="font-variant-numeric:tabular-nums;">${formatDuration(elapsed)} / ${formatDuration(planned)}</span> ${s.timerRunning ? '<span style="color:var(--brand); font-weight:bold;">(Tracking Live...)</span>' : ''}</div>
-                <div class="inline-actions">${buttons}</div>
-            </article>`;
-        }).join('');
-    }
-
-    function renderExams() {
-        const list = document.getElementById('examList');
-        const search = document.getElementById('examSearch').value.trim().toLowerCase();
-        const subject = document.getElementById('examSubjectFilter').value;
-        const sort = document.getElementById('examSort').value;
-        let exams = state.exams.filter(e => (!search || `${e.subject} ${e.description} ${e.afterThoughts}`.toLowerCase().includes(search)) && (subject === 'all' || e.subject === subject));
-        exams.sort((a, b) => sort === 'subject' ? a.subject.localeCompare(b.subject) || a.dateTimeMs - b.dateTimeMs : a.dateTimeMs - b.dateTimeMs);
-        if (exams.length === 0) { list.innerHTML = '<div class="empty">No exams found. Add your upcoming exams.</div>'; return; }
-        list.innerHTML = exams.map(e => {
-            const daysLeft = Math.max(0, Math.ceil((e.dateTimeMs - Date.now()) / (24 * 60 * 60 * 1000)));
-            const dayClass = daysLeft <= 14 ? 'status-lock' : ''; // Highlight if urgent
-            return `<article class="card">
-                <div class="card-top"><strong style="font-size:1.1rem;">${e.subject}</strong><span class="badge ${dayClass}">${daysLeft === 0 ? 'TODAY' : daysLeft + ' days left'}</span></div>
-                <div class="meta" style="color:#cbd5e1;">${e.description || 'No description'}</div>
-                <div class="meta">📅 ${formatDateTime(e.dateTimeMs)} • ⏱️ ${e.durationMinutes} minutes</div>
-                <textarea id="thought-${e.id}" data-exam-id="${e.id}" class="exam-thoughts" placeholder="Post-exam reflection & thoughts...">${e.afterThoughts || ''}</textarea>
-            </article>`;
-        }).join('');
-        document.querySelectorAll('.exam-thoughts').forEach(area => area.addEventListener('change', event => updateState(draft => { const exam = draft.exams.find(x => x.id === event.target.dataset.examId); if (exam) exam.afterThoughts = String(event.target.value || '').slice(0, 3000); })));
-    }
-
-    function renderFocusTimer() {
-        document.getElementById('focusDisplay').textContent = formatDuration(state.focusTimer.remainingSeconds);
-        document.getElementById('focusToggleBtn').textContent = state.focusTimer.isRunning ? '⏸ Pause Timer' : '▶ Start Timer';
-        document.getElementById('focusStatus').textContent = state.focusTimer.isRunning ? 'Live & Syncing...' : 'Ready';
-        if (state.focusTimer.isRunning) {
-             document.getElementById('focusDisplay').style.textShadow = "0 0 10px rgba(90,169,255,0.5)";
-        } else {
-             document.getElementById('focusDisplay').style.textShadow = "none";
-        }
-    }
-
-    function getCalendarItemsForDay(key) {
-        const sessions = state.sessions.filter(s => dayKeyFromMs(s.startAtMs) === key).map(s => ({ type: 'session', label: `${s.subject}: ${s.title}`, atMs: s.startAtMs }));
-        const exams = state.exams.filter(e => dayKeyFromMs(e.dateTimeMs) === key).map(e => ({ type: 'exam', label: `${e.subject} exam`, atMs: e.dateTimeMs }));
-        return [...sessions, ...exams].sort((a, b) => a.atMs - b.atMs);
-    }
-
-    function renderDayDetails() {
-        const host = document.getElementById('calendarDayDetails');
-        if (!selectedDayKey) { host.textContent = 'Pick a date to inspect sessions/exams.'; return; }
-        const items = getCalendarItemsForDay(selectedDayKey);
-        host.innerHTML = items.length ? items.map(it => `<div style="margin-bottom:0.5rem;"><strong style="color:${it.type === 'exam' ? 'var(--warn)' : 'var(--brand)'}">${formatDateTime(it.atMs)}</strong> <br> ${it.label}</div>`).join('') : `No items scheduled for ${selectedDayKey}.`;
-    }
-
-    function renderCalendar() {
-        document.getElementById('calendarMonthLabel').textContent = currentCalendarMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-        const year = currentCalendarMonth.getFullYear(), month = currentCalendarMonth.getMonth(), first = new Date(year, month, 1), start = new Date(first), offset = (first.getDay() + 6) % 7;
-        start.setDate(first.getDate() - offset);
-        const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(w => `<div class="meta" style="padding:.2rem .25rem; text-align:center; font-weight:bold;">${w}</div>`).join('');
-        let cells = '';
-        for (let i = 0; i < 42; i++) {
-            const d = new Date(start); d.setDate(start.getDate() + i); const key = dayKeyFromMs(d.getTime()), items = getCalendarItemsForDay(key), isOther = d.getMonth() !== month, isToday = key === dayKeyFromMs(Date.now());
-            const dots = `${items.some(x => x.type === 'session') ? '<span class="dot session"></span>' : ''}${items.some(x => x.type === 'exam') ? '<span class="dot exam"></span>' : ''}`;
-            cells += `<button type="button" class="cal-cell ${isOther ? 'other' : ''} ${isToday ? 'today' : ''}" data-day-key="${key}" aria-label="${d.toDateString()}"><div style="text-align:right;">${d.getDate()}</div><div class="dot-row" style="justify-content:flex-end;">${dots}</div></button>`;
-        }
-        const grid = document.getElementById('calendarGrid');
-        grid.innerHTML = weekdays + cells;
-        grid.querySelectorAll('.cal-cell').forEach(btn => btn.addEventListener('click', () => { selectedDayKey = btn.dataset.dayKey; renderDayDetails(); }));
-        renderDayDetails();
-    }
-
-    function renderSettings() {
-        document.getElementById('timeFormatSelect').value = state.settings.timeFormat;
-        document.getElementById('defaultFocusMinutes').value = state.settings.defaultFocusMinutes;
-    }
-
-    function renderTabVisibility() {
-        ['sessions','exams','calendar','settings'].forEach(tab => {
-            const active = tab === activeTab;
-            document.getElementById(`tab-${tab}`).classList.toggle('hidden', !active);
-            const button = document.querySelector(`[data-tab="${tab}"]`);
-            button.classList.toggle('active', active);
-            button.setAttribute('aria-selected', String(active));
-        });
-    }
-
-    function renderAll() { renderSubjectFilters(); renderSessions(); renderExams(); renderFocusTimer(); renderCalendar(); renderSettings(); renderProgress(); renderTabVisibility(); }
-
-    function startSessionTimer(id) { updateState(draft => { const s = draft.sessions.find(x => x.id === id); if (!s || s.completed || s.timerRunning) return; s.timerRunning = true; s.timerStartedAtMs = Date.now(); }); }
-    function stopSessionTimer(id) { updateState(draft => { const s = draft.sessions.find(x => x.id === id); if (!s || !s.timerRunning || !s.timerStartedAtMs) return; s.elapsedSeconds = (Number(s.elapsedSeconds) || 0) + Math.floor(Math.max(0, Date.now() - s.timerStartedAtMs) / 1000); s.timerRunning = false; s.timerStartedAtMs = null; }); }
+    // Logic Functions
+    function startSessionTimer(id) { updateState(d => { d.sessions.forEach(s => s.timerRunning = false); const s = d.sessions.find(x => x.id === id); if(s) { s.timerRunning = true; s.timerStartedAtMs = Date.now(); d.focusTimer.isRunning = false; } }); }
+    function stopSessionTimer(id) { updateState(d => { const s = d.sessions.find(x => x.id === id); if(s && s.timerRunning) { s.elapsedSeconds = getSessionElapsedSeconds(s); s.timerRunning = false; s.timerStartedAtMs = null; } }); }
     function markSessionComplete(id) { 
-        updateState(draft => { 
-            const s = draft.sessions.find(x => x.id === id); 
-            if (!s) return; 
-            if (!canCompleteByDate(s.startAtMs) && !s.completed) { 
-                showToast(`🔒 Scheduled for ${formatDateTime(s.startAtMs)}.`); 
-                return; 
-            } 
+        updateState(d => { 
+            const s = d.sessions.find(x => x.id === id); 
+            if(!s) return;
             s.completed = !s.completed; 
-            s.completedAtMs = s.completed ? Date.now() : null; 
-            if (s.completed) { 
-                s.timerRunning = false; 
-                s.timerStartedAtMs = null; 
-                showToast('✓ Session Marked Complete');
-            } 
+            if(s.completed) { s.timerRunning = false; fireConfetti(); showToast('🎉 Mission Accomplished!'); } 
         }); 
     }
-    
-    function onSessionActionClick(event) {
-        const emptyActionButton = event.target.closest('button[data-empty-action]');
-        if (emptyActionButton && emptyActionButton.dataset.emptyAction === 'quick-add-today') { quickAddToday(); return; }
-        const button = event.target.closest('button[data-session-action][data-session-id]');
-        if (!button) return;
-        const action = button.dataset.sessionAction;
-        const sessionId = button.dataset.sessionId;
-        if (action === 'start') startSessionTimer(sessionId);
-        if (action === 'stop') stopSessionTimer(sessionId);
-        if (action === 'complete') markSessionComplete(sessionId);
+
+    function toggleGlobalTimer() {
+        updateState(d => {
+            const f = d.focusTimer;
+            if(f.isRunning) { f.remainingSeconds = Math.max(0, Math.ceil((f.targetEndMs - Date.now())/1000)); f.isRunning = false; }
+            else { f.isRunning = true; f.targetEndMs = Date.now() + (f.remainingSeconds||10800)*1000; d.sessions.forEach(s => s.timerRunning = false); }
+        });
     }
 
-    function exportSchedule() {
-        const payload = { schemaVersion: 4, exportedAt: new Date().toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', sessions: state.sessions, exams: state.exams, settings: state.settings, focusTimer: state.focusTimer };
-        const out = JSON.stringify(payload, null, 2);
-        const blob = new Blob([out], { type: 'application/json' });
-        const anchor = document.createElement('a');
-        anchor.href = URL.createObjectURL(blob);
-        anchor.download = `higher-schedule-${new Date().toISOString().slice(0, 10)}.json`;
-        anchor.click();
-        URL.revokeObjectURL(anchor.href);
-        showToast('Backup Exported successfully.');
-    }
+    document.getElementById('sessionList').addEventListener('click', e => {
+        const btn = e.target.closest('button[data-action]');
+        if(!btn) return;
+        const act = btn.dataset.action, id = btn.dataset.id;
+        if(act === 'start') startSessionTimer(id);
+        if(act === 'stop') stopSessionTimer(id);
+        if(act === 'complete') markSessionComplete(id);
+    });
 
-    function tickTimers() {
-        const now = Date.now();
-        if (lastObservedNow === null) { lastObservedNow = now; return; }
-        const shouldCheckDrift = now - lastDriftCheckAt >= 10000;
-        if (shouldCheckDrift) { lastDriftCheckAt = now; }
-        if (shouldCheckDrift && Math.abs(now - lastObservedNow) > CLOCK_DRIFT_MS) {
-            updateState(draft => {
-                draft.sessions.forEach(s => { if (s.timerRunning && s.timerStartedAtMs) { s.elapsedSeconds = (Number(s.elapsedSeconds) || 0) + Math.floor(Math.max(0, now - s.timerStartedAtMs) / 1000); s.timerRunning = false; s.timerStartedAtMs = null; } });
-                if (draft.focusTimer.isRunning && draft.focusTimer.targetEndMs) { draft.focusTimer.remainingSeconds = Math.max(0, Math.ceil((draft.focusTimer.targetEndMs - now) / 1000)); draft.focusTimer.isRunning = false; draft.focusTimer.targetEndMs = null; }
-            }, { sync: true });
-            showToast('Clock anomaly detected. Timers paused.');
-        } else {
-            let changed = false;
-            state.sessions.forEach(s => { if (completeSessionIfNeeded(s, now)) { changed = true; showToast(`🎉 Auto-completed: ${s.title}`); } });
-            if (state.focusTimer.isRunning && state.focusTimer.targetEndMs) {
-                state.focusTimer.remainingSeconds = Math.max(0, Math.ceil((state.focusTimer.targetEndMs - now) / 1000));
-                if (state.focusTimer.remainingSeconds <= 0) { state.focusTimer.isRunning = false; state.focusTimer.targetEndMs = null; state.focusTimer.remainingSeconds = 0; changed = true; showToast('⏱️ Focus session finished!'); }
-            }
-            if (changed) { saveLocalState(); renderAll(); syncCloud(); } else { renderSessions(); renderFocusTimer(); }
+    setInterval(() => {
+        let needsRender = false;
+        if(state.focusTimer.isRunning) {
+            state.focusTimer.remainingSeconds = Math.max(0, Math.ceil((state.focusTimer.targetEndMs - Date.now())/1000));
+            needsRender = true;
         }
-        lastObservedNow = now;
-    }
+        if(state.sessions.some(s => s.timerRunning)) needsRender = true;
+        if(needsRender) renderHUDTimer();
+    }, 1000);
 
-    function toggleFocusTimer() {
-        updateState(draft => {
-            const f = draft.focusTimer;
-            if (f.isRunning) { f.remainingSeconds = Math.max(0, Math.ceil((f.targetEndMs - Date.now()) / 1000)); f.isRunning = false; f.targetEndMs = null; }
-            else { if (f.remainingSeconds <= 0) f.remainingSeconds = draft.settings.defaultFocusMinutes * 60; f.isRunning = true; f.targetEndMs = Date.now() + f.remainingSeconds * 1000; }
-            f.lastChangedAt = Date.now();
-        });
-    }
-    const resetFocusTimer = (minutes = null) => updateState(draft => { const f = draft.focusTimer; f.isRunning = false; f.targetEndMs = null; f.remainingSeconds = Math.max(MIN_FOCUS_SECONDS, (minutes || draft.settings.defaultFocusMinutes) * 60); f.lastChangedAt = Date.now(); });
-    function quickAddToday() { const now = new Date(); now.setHours(Math.max(now.getHours(), 16), 0, 0, 0); updateState(draft => draft.sessions.push(normalizeSession({ id: randomId('session'), title: 'Custom 3h Study Block', subject: 'Other', startAtMs: now.getTime(), durationMinutes: 180, notes: '', completed: false, elapsedSeconds: 0, timerRunning: false, timerStartedAtMs: null }))); showToast('Added a 3-hour session for today.'); }
-
-    function bindUi() {
-        ['sessionSearch','sessionSubjectFilter','sessionSort'].forEach(id => { document.getElementById(id).addEventListener('input', renderSessions); document.getElementById(id).addEventListener('change', renderSessions); });
-        ['examSearch','examSubjectFilter','examSort'].forEach(id => { document.getElementById(id).addEventListener('input', renderExams); document.getElementById(id).addEventListener('change', renderExams); });
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderTabVisibility(); }));
-        document.getElementById('quickAddTodayBtn').addEventListener('click', quickAddToday);
-        document.getElementById('sessionList').addEventListener('click', onSessionActionClick);
-        document.getElementById('todayEmptyState').addEventListener('click', onSessionActionClick);
-        document.getElementById('sessionForm').addEventListener('submit', event => {
-            event.preventDefault();
-            const title = document.getElementById('sessionTitle').value.trim();
-            const subject = document.getElementById('sessionSubject').value;
-            const ms = parseLocalDateTime(document.getElementById('sessionDateTime').value);
-            const duration = Number(document.getElementById('sessionDuration').value);
-            const notes = document.getElementById('sessionNotes').value.trim();
-            if (!title || !ms || !Number.isFinite(duration) || duration < 5 || duration > 720) { showToast('Invalid input.'); return; }
-            updateState(draft => draft.sessions.push(normalizeSession({ id: randomId('session'), title, subject, startAtMs: ms, durationMinutes: duration, notes, completed: false, elapsedSeconds: 0, timerRunning: false, timerStartedAtMs: null })));
-            event.target.reset(); showToast('Session Added.');
-        });
-        document.getElementById('examForm').addEventListener('submit', event => {
-            event.preventDefault();
-            const subject = document.getElementById('examSubject').value;
-            const ms = parseLocalDateTime(document.getElementById('examDateTime').value);
-            const duration = Number(document.getElementById('examDuration').value);
-            const description = document.getElementById('examDescription').value.trim();
-            const afterThoughts = document.getElementById('examThoughts').value.trim();
-            if (!ms || !Number.isFinite(duration) || duration < 10 || duration > 600) { showToast('Invalid input.'); return; }
-            updateState(draft => draft.exams.push(normalizeExam({ id: randomId('exam'), subject, dateTimeMs: ms, durationMinutes: duration, description, afterThoughts })));
-            event.target.reset(); showToast('Exam Added.');
-        });
-        document.getElementById('focusToggleBtn').addEventListener('click', toggleFocusTimer);
-        document.getElementById('focusResetBtn').addEventListener('click', () => resetFocusTimer());
-        document.getElementById('focus25Btn').addEventListener('click', () => resetFocusTimer(25));
-        document.getElementById('focus180Btn').addEventListener('click', () => resetFocusTimer(180));
-        document.getElementById('prevMonthBtn').addEventListener('click', () => { currentCalendarMonth = new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() - 1, 1); renderCalendar(); });
-        document.getElementById('nextMonthBtn').addEventListener('click', () => { currentCalendarMonth = new Date(currentCalendarMonth.getFullYear(), currentCalendarMonth.getMonth() + 1, 1); renderCalendar(); });
-        document.getElementById('saveSettingsBtn').addEventListener('click', () => { const tf = document.getElementById('timeFormatSelect').value, mins = Number(document.getElementById('defaultFocusMinutes').value); if (!Number.isFinite(mins) || mins < 5 || mins > 360) { showToast('Focus must be 5-360 mins.'); return; } updateState(draft => { draft.settings.timeFormat = tf === '12' ? '12' : '24'; draft.settings.defaultFocusMinutes = mins; if (!draft.focusTimer.isRunning) draft.focusTimer.remainingSeconds = mins * 60; }); showToast('Settings Saved.'); });
-        document.getElementById('exportBtn').addEventListener('click', exportSchedule);
-        document.getElementById('importInput').addEventListener('change', async event => {
-            const file = event.target.files && event.target.files[0]; if (!file) return;
-            try {
-                const parsed = JSON.parse(await file.text());
-                if (!Array.isArray(parsed.sessions) || !Array.isArray(parsed.exams)) throw new Error('Invalid format.');
-                updateState(draft => { draft.sessions = parsed.sessions.map(normalizeSession); draft.exams = parsed.exams.map(normalizeExam); if (parsed.settings) draft.settings = normalizeState({ settings: parsed.settings }).settings; if (parsed.focusTimer) draft.focusTimer = normalizeState({ focusTimer: parsed.focusTimer }).focusTimer; });
-                showToast('Import Complete.');
-            } catch (error) { showToast('Import Failed.'); }
-            finally { event.target.value = ''; }
-        });
-        document.addEventListener('visibilitychange', tickTimers);
-        document.addEventListener('keydown', event => {
-            const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
-            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') { event.preventDefault(); document.getElementById('sessionSearch').focus(); }
-            if (event.altKey && event.shiftKey && event.key.toLowerCase() === 't' && !inInput) { event.preventDefault(); toggleFocusTimer(); }
-            if (event.altKey && event.shiftKey && event.key.toLowerCase() === 'n' && !inInput) { event.preventDefault(); activeTab = 'sessions'; renderTabVisibility(); }
-            if (event.altKey && event.shiftKey && event.key.toLowerCase() === 'e' && !inInput) { event.preventDefault(); activeTab = 'exams'; renderTabVisibility(); }
-        });
-    }
-
-    bindUi();
     renderAll();
-    syncCloud(true);
-    subscribeCloud();
-    setInterval(tickTimers, 1000);
-    document.getElementById('sessionDateTime').value = toISODateTimeLocal(Date.now() + HOUR_MS);
-    document.getElementById('examDateTime').value = toISODateTimeLocal(Date.now() + DAY_MS);
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('section[role="tabpanel"]').forEach(s => s.classList.add('hidden'));
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+    }));
 </script>
 </body>
 </html>
