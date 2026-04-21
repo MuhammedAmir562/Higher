@@ -206,6 +206,7 @@
     const TOAST_MS = 2600;
     const HOUR_MS = 60 * 60 * 1000;
     const DAY_MS = 24 * HOUR_MS;
+    // Keep focus sessions meaningful by enforcing a 5-minute minimum when resetting presets/settings.
     const MIN_FOCUS_SECONDS = 5 * 60;
     // 5 minutes avoids false positives from minor scheduling jitter while still catching manual clock/timezone jumps.
     const CLOCK_DRIFT_MS = 5 * 60 * 1000;
@@ -592,8 +593,8 @@
     }
 
     function runKeyBehaviorChecks() {
-        const future = Date.now() + 3600000;
-        const past = Date.now() - 3600000;
+        const future = Date.now() + HOUR_MS;
+        const past = Date.now() - HOUR_MS;
         const session = normalizeSession({ id: 'x', title: 'x', subject: 'x', startAtMs: past, durationMinutes: 1, elapsedSeconds: 60, completed: false, timerRunning: false, timerStartedAtMs: null });
         const autoCompletes = completeSessionIfNeeded(session, Date.now()) && session.completed;
         const checks = [canCompleteByDate(future) === false, canCompleteByDate(past) === true, autoCompletes];
