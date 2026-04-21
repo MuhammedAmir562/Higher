@@ -3,424 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Higher Command Center | Premium</title>
+    <title>Higher Command Center | Pro</title>
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
     <style>
-        :root { 
-            --bg-base: #09090b; 
-            --bg-panel: rgba(24, 24, 27, 0.6); 
-            --bg-card: rgba(39, 39, 42, 0.4);
-            --border: rgba(255, 255, 255, 0.1);
-            --border-hover: rgba(255, 255, 255, 0.2);
-            --text-main: #f8fafc; 
-            --text-muted: #a1a1aa; 
-            --accent: #3b82f6; 
-            --accent-glow: rgba(59, 130, 246, 0.4);
-            --success: #10b981; 
-        }
-        
+        :root { --bg:#09090b; --panel:rgba(24,24,27,0.7); --border:rgba(255,255,255,0.1); --text:#f8fafc; --muted:#a1a1aa; --accent:#3b82f6; --success:#10b981; }
         * { box-sizing: border-box; }
-        
-        body { 
-            margin: 0; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background: var(--bg-base); 
-            background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 400px),
-                              radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.05), transparent 400px);
-            color: var(--text-main); 
-            padding: 1.5rem; 
-            line-height: 1.5;
-            min-height: 100vh;
-        }
-
-        .container { 
-            max-width: 1100px; 
-            margin: 0 auto; 
-            display: grid; 
-            grid-template-columns: 1.5fr 1fr; 
-            gap: 1.5rem; 
-            align-items: flex-start;
-        }
-
-        /* iPad / Mobile Responsiveness */
-        @media (max-width: 850px) {
-            .container { grid-template-columns: 1fr; }
-            body { padding: 1rem; }
-        }
-        
-        /* Glass Panel Styling */
-        .panel { 
-            background: var(--bg-panel); 
-            border: 1px solid var(--border); 
-            border-radius: 16px; 
-            padding: 1.5rem; 
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Typography */
-        h1 { margin: 0 0 0.2rem 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
-        h2 { font-size: 1.1rem; color: var(--text-main); margin: 0 0 1rem 0; font-weight: 600; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; }
-        p.subtitle { margin: 0 0 1.5rem 0; color: var(--text-muted); font-size: 0.9rem; }
-
-        /* Sync Status */
-        .sync-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(16, 185, 129, 0.2); font-weight: 600; }
-        .sync-dot { height: 6px; width: 6px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-        /* The Custom Timer Engine */
-        .timer-display { text-align: center; margin: 1.5rem 0; }
-        .time { font-size: 4.5rem; font-weight: 800; font-variant-numeric: tabular-nums; margin: 0; letter-spacing: -2px; text-shadow: 0 0 20px rgba(255,255,255,0.1); transition: color 0.3s; }
-        .time.running { color: var(--accent); text-shadow: 0 0 20px var(--accent-glow); }
-        
-        .timer-progress-bg { height: 6px; background: rgba(0,0,0,0.5); border-radius: 3px; overflow: hidden; margin-bottom: 1.5rem; }
-        .timer-progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 1s linear; }
-
-        .btn-giant { background: var(--text-main); color: var(--bg-base); border: none; padding: 1rem 2rem; font-size: 1.1rem; font-weight: bold; border-radius: 12px; width: 100%; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
-        .btn-giant:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(255,255,255,0.2); }
-        .btn-giant.running { background: rgba(255,255,255,0.1); color: var(--text-main); box-shadow: none; border: 1px solid var(--border); }
-        .btn-giant.running:hover { background: rgba(255,255,255,0.15); }
-
-        /* Custom Timer Controls */
-        .timer-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
-        .btn-preset { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); padding: 0.6rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
-        .btn-preset:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
-        
-        .custom-timer-row { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
-        .custom-timer-row input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; color: var(--text-main); font-family: inherit; }
-        .custom-timer-row input:focus { outline: none; border-color: var(--accent); }
-        .custom-timer-row button { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main); padding: 0.6rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
-        .custom-timer-row button:hover { border-color: var(--accent); color: var(--accent); }
-
-        /* Task & Exam Lists */
-        .list-container { display: flex; flex-direction: column; gap: 0.8rem; }
-        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
-        .card:hover { border-color: var(--border-hover); transform: translateY(-1px); }
-        .card.done { opacity: 0.5; border-color: transparent; background: rgba(0,0,0,0.3); }
-        .card.done .item-title { text-decoration: line-through; color: var(--text-muted); }
-        
-        .item-main { display: flex; flex-direction: column; gap: 0.3rem; }
-        .item-title { font-weight: 600; font-size: 1.05rem; transition: color 0.2s; }
-        .item-sub { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-        
-        .btn-check { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; }
-        .btn-check:hover { background: rgba(255,255,255,0.05); }
-        .btn-check.done { background: rgba(16, 185, 129, 0.15); border-color: var(--success); color: var(--success); }
-        
-        /* Add Custom Task */
-        .add-task-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-        .add-task-row input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem; color: var(--text-main); font-family: inherit; font-size: 0.95rem; }
-        .add-task-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
-        .add-task-row button { background: var(--accent); border: none; color: #fff; padding: 0.8rem 1.2rem; border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
-        .add-task-row button:hover { background: #2563eb; transform: translateY(-1px); }
+        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); background-image: radial-gradient(circle at top right, rgba(59,130,246,0.1), transparent 400px); color: var(--text); padding: 1.5rem; min-height: 100vh; }
+        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; }
+        @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.5px; }
+        h2 { font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin: 1.5rem 0 1rem; }
+        .sync-badge { font-size: 0.75rem; color: var(--success); background: rgba(16,185,129,0.1); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(16,185,129,0.2); }
+        .timer-display { text-align: center; padding: 1rem 0; }
+        .time { font-size: 4.5rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
+        .time.running { color: var(--accent); text-shadow: 0 0 20px rgba(59,130,246,0.4); }
+        .btn-giant { background: var(--text); color: #000; border: none; padding: 1rem; font-size: 1.1rem; font-weight: bold; border-radius: 12px; width: 100%; cursor: pointer; transition: 0.2s; }
+        .btn-giant.running { background: rgba(255,255,255,0.1); color: var(--text); }
+        .card { background: rgba(39,39,42,0.4); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
+        .card.done { opacity: 0.4; }
+        .item-main { display: flex; flex-direction: column; gap: 0.2rem; }
+        .item-title { font-weight: 600; }
+        .item-sub { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: bold; }
+        .btn-check { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+        .btn-check.done { background: var(--success); border-color: var(--success); color: #000; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    
     <div class="panel">
-        <header style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-            <div>
-                <h1>Higher Strategy</h1>
-                <p class="subtitle">A-Grade Roadmap</p>
-            </div>
-            <div class="sync-badge" id="syncStatus"><span class="sync-dot"></span> Syncing...</div>
+        <header style="display:flex; justify-content:space-between; align-items:center;">
+            <h1>Higher Roadmap</h1>
+            <div class="sync-badge">Live Synced</div>
         </header>
-
-        <form id="addTaskForm" class="add-task-row">
-            <input type="text" id="newTaskInput" placeholder="Add a custom study task..." required autocomplete="off">
-            <button type="submit">+</button>
-        </form>
-
-        <h2>Daily Missions <span id="progressText" style="font-size: 0.85rem; color: var(--text-muted); font-weight: normal;">0/0 Done</span></h2>
-        <div class="list-container" id="tasksList">
-            </div>
+        
+        <h2>Study Schedule (3h Blocks)</h2>
+        <div id="tasksList"></div>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-        
+    <div style="display:flex; flex-direction:column; gap:1.5rem;">
         <div class="panel">
-            <h2 style="border:none; margin-bottom:0; justify-content:center; color:var(--text-muted);">Focus Engine</h2>
-            
             <div class="timer-display">
                 <div class="time" id="timerDisplay">03:00:00</div>
             </div>
-            
-            <div class="timer-progress-bg">
-                <div class="timer-progress-fill" id="timerProgressBar"></div>
-            </div>
-
             <button id="toggleTimerBtn" class="btn-giant">▶ Start Timer</button>
-
-            <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
-                <p style="margin: 0 0 0.8rem 0; font-size: 0.85rem; color: var(--text-muted); text-align: center;">TIMER PRESETS</p>
-                <div class="timer-presets">
-                    <button class="btn-preset" onclick="setCustomTimer(25)">25m Pomodoro</button>
-                    <button class="btn-preset" onclick="setCustomTimer(50)">50m Deep Work</button>
-                    <button class="btn-preset" onclick="setCustomTimer(180)">3h Exam Block</button>
-                </div>
-                
-                <form id="customTimerForm" class="custom-timer-row">
-                    <input type="number" id="customMinInput" placeholder="Custom minutes..." min="1" max="600">
-                    <button type="submit">Set</button>
-                </form>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-top:1rem;">
+                <button onclick="setCustomTimer(25)" style="background:none; border:1px solid var(--border); color:var(--muted); padding:0.5rem; border-radius:8px; cursor:pointer;">25m Pom</button>
+                <button onclick="setCustomTimer(180)" style="background:none; border:1px solid var(--border); color:var(--muted); padding:0.5rem; border-radius:8px; cursor:pointer;">3h Exam</button>
             </div>
         </div>
 
         <div class="panel">
-            <h2>Upcoming Exams</h2>
-            <div class="list-container" id="examsList">
-                </div>
+            <h2>Exam Countdown</h2>
+            <div id="examsList"></div>
         </div>
-
     </div>
 </div>
 
 <script>
-    // --- 1. FIREBASE CONFIGURATION ---
-    const firebaseConfig = {
-        apiKey: "AIzaSyBojGtfnEB3aj4my_QBRBD5rTrshSXTjag",
-        authDomain: "higherexams.firebaseapp.com",
-        projectId: "higherexams"
-    };
+    const firebaseConfig = { apiKey: "AIzaSyBojGtfnEB3aj4my_QBRBD5rTrshSXTjag", authDomain: "higherexams.firebaseapp.com", projectId: "higherexams" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore().collection('studyData').doc('premiumState');
 
-    // --- 2. DATA SETUP ---
-    const randomId = () => 'task-' + Math.random().toString(36).substr(2, 9);
-    
-    // Core SQA Exams
+    // EXAMS
     const exams = [
-        { subject: 'English', paper: 'RUAE & Critical', date: new Date('2026-05-01T09:00:00') },
-        { subject: 'Mathematics', paper: 'Paper 1 & 2', date: new Date('2026-05-07T09:00:00') },
-        { subject: 'Chemistry', paper: 'Multiple Choice & P2', date: new Date('2026-05-12T09:00:00') },
-        { subject: 'Computing Science', paper: 'Full Paper', date: new Date('2026-05-20T09:00:00') },
-        { subject: 'Physics', paper: 'Multiple Choice & P2', date: new Date('2026-05-21T09:00:00') }
+        { name: 'English (RUAE & Critical)', date: new Date('2026-05-01') },
+        { name: 'Mathematics (P1 & P2)', date: new Date('2026-05-07') },
+        { name: 'Chemistry (MC & P2)', date: new Date('2026-05-12') },
+        { name: 'Computing Science', date: new Date('2026-05-20') },
+        { name: 'Physics (MC & P2)', date: new Date('2026-05-21') }
     ];
 
-    // Initial Core Roadmap Tasks
+    // FULL STUDY TIMETABLE
     const initialTasks = [
-        { id: randomId(), dateLabel: 'Phase 1 Core', title: 'English: Essay Adaptation Practice', done: false, createdAt: Date.now() - 10000 },
-        { id: randomId(), dateLabel: 'Phase 1 Core', title: 'English: RUAE Timed Past Paper', done: false, createdAt: Date.now() - 9000 },
-        { id: randomId(), dateLabel: 'Phase 1 Core', title: 'Maths: Non-Calc Drills', done: false, createdAt: Date.now() - 8000 },
-        { id: randomId(), dateLabel: 'Phase 1 Core', title: 'Chemistry: Data Booklet Master', done: false, createdAt: Date.now() - 7000 }
+        { id: 't1', date: 'Apr 22', title: 'English: Essay Adaptation', done: false },
+        { id: 't2', date: 'Apr 23', title: 'English: RUAE Past Paper', done: false },
+        { id: 't3', date: 'Apr 24', title: 'Maths: Non-Calc Drills', done: false },
+        { id: 't4', date: 'Apr 25', title: 'English: Quote Bank Memory', done: false },
+        { id: 't5', date: 'Apr 26', title: 'Chemistry: Data Booklet Master', done: false },
+        { id: 't6', date: 'Apr 27', title: 'English: Full Essay Timed', done: false },
+        { id: 't7', date: 'Apr 28', title: 'Computing: Web/DB Design', done: false },
+        { id: 't8', date: 'Apr 29', title: 'Physics: Formula Focus', done: false },
+        { id: 't9', date: 'Apr 30', title: 'English: Final Review', done: false },
+        { id: 't10', date: 'May 2', title: 'Maths: Heavy Calculator Qs', done: false },
+        { id: 't11', date: 'May 3', title: 'Chemistry: Multiple Choice', done: false },
+        { id: 't12', date: 'May 4', title: 'Maths: Past Paper Practice', done: false },
+        { id: 't13', date: 'May 5', title: 'Maths: SQA Logic Analysis', done: false },
+        { id: 't14', date: 'May 6', title: 'Maths: Final P2 Review', done: false }
     ];
 
-    // --- 3. STATE MANAGEMENT ---
-    let state = JSON.parse(localStorage.getItem('premiumState')) || { 
-        timerRunning: false, 
-        totalDuration: 3 * 60 * 60, // Total seconds for the progress bar
-        timeLeft: 3 * 60 * 60,      // Current seconds left
-        lastStartMs: null, 
-        tasks: initialTasks 
-    };
+    let state = JSON.parse(localStorage.getItem('premiumState')) || { timerRunning: false, timeLeft: 10800, tasks: initialTasks };
 
-    // Auto-migrate old state if missing properties
-    if (!state.totalDuration) state.totalDuration = state.timeLeft || (3 * 60 * 60);
-
-    // --- 4. CLOUD SYNC LOGIC ---
-    function saveAndSync() {
-        localStorage.setItem('premiumState', JSON.stringify(state));
-        db.set(state).catch(() => console.warn("Working locally/offline"));
+    function save() { 
+        localStorage.setItem('premiumState', JSON.stringify(state)); 
+        db.set(state).catch(() => {}); 
     }
 
-    db.onSnapshot(doc => {
-        if (doc.exists) { 
-            state = doc.data(); 
-            renderAll(); 
-        }
-        document.getElementById('syncStatus').innerHTML = '<span class="sync-dot"></span> Live';
-    }, error => {
-        document.getElementById('syncStatus').innerHTML = 'Offline Mode';
-        document.getElementById('syncStatus').style.color = 'var(--text-muted)';
-        document.getElementById('syncStatus').style.borderColor = 'var(--border)';
-        document.getElementById('syncStatus').style.background = 'transparent';
-    });
+    db.onSnapshot(doc => { if (doc.exists) { state = doc.data(); renderAll(); } });
 
-    // --- 5. TIMER ENGINE ---
-    function formatTime(secs) {
-        const s = Math.max(0, Math.floor(secs));
-        const h = String(Math.floor(s / 3600)).padStart(2, '0');
-        const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-        const sc = String(s % 60).padStart(2, '0');
-        if (h === "00") return `${m}:${sc}`; // Hide hours if < 1h
+    function formatTime(s) {
+        const h = String(Math.floor(s/3600)).padStart(2, '0');
+        const m = String(Math.floor((s%3600)/60)).padStart(2, '0');
+        const sc = String(s%60).padStart(2, '0');
         return `${h}:${m}:${sc}`;
     }
 
     function renderTimer() {
-        let currentLeft = state.timeLeft;
+        let left = state.timeLeft;
         if (state.timerRunning && state.lastStartMs) {
-            const elapsed = Math.floor((Date.now() - state.lastStartMs) / 1000);
-            currentLeft = Math.max(0, state.timeLeft - elapsed);
-            
-            // Auto-stop if hit 0
-            if (currentLeft === 0) {
-                state.timerRunning = false;
-                state.timeLeft = 0;
-                saveAndSync();
-                // Optional: Play a sound here
-            }
+            left = Math.max(0, state.timeLeft - Math.floor((Date.now() - state.lastStartMs)/1000));
         }
-        
-        const display = document.getElementById('timerDisplay');
-        display.textContent = formatTime(currentLeft);
-        
-        if (state.timerRunning) {
-            display.classList.add('running');
-        } else {
-            display.classList.remove('running');
-        }
-
-        const btn = document.getElementById('toggleTimerBtn');
-        btn.textContent = state.timerRunning ? '⏸ Pause Timer' : '▶ Start Timer';
-        btn.className = state.timerRunning ? 'btn-giant running' : 'btn-giant';
-
-        // Progress Bar Calculation
-        const progressBar = document.getElementById('timerProgressBar');
-        if (state.totalDuration > 0) {
-            const percent = 100 - ((currentLeft / state.totalDuration) * 100);
-            progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
-        } else {
-            progressBar.style.width = '0%';
-        }
+        const disp = document.getElementById('timerDisplay');
+        disp.textContent = formatTime(left);
+        disp.className = state.timerRunning ? 'time running' : 'time';
+        document.getElementById('toggleTimerBtn').textContent = state.timerRunning ? '⏸ Pause' : '▶ Start Study';
     }
 
-    // Controls
-    document.getElementById('toggleTimerBtn').onclick = () => {
-        if (state.timerRunning) {
-            // Pausing
-            state.timeLeft -= Math.floor((Date.now() - state.lastStartMs) / 1000);
-            state.timeLeft = Math.max(0, state.timeLeft);
-            state.timerRunning = false;
-        } else {
-            // Starting
-            if (state.timeLeft <= 0) state.timeLeft = state.totalDuration; // Reset if starting at 0
-            state.lastStartMs = Date.now();
-            state.timerRunning = true;
-        }
-        saveAndSync();
-        renderTimer();
-    };
-
-    window.setCustomTimer = (minutes) => {
-        const seconds = minutes * 60;
-        state.timerRunning = false;
-        state.totalDuration = seconds;
-        state.timeLeft = seconds;
-        saveAndSync();
-        renderTimer();
-    };
-
-    document.getElementById('customTimerForm').onsubmit = (e) => {
-        e.preventDefault();
-        const mins = document.getElementById('customMinInput').value;
-        if (mins && mins > 0) {
-            setCustomTimer(parseInt(mins));
-            document.getElementById('customMinInput').value = '';
-        }
-    };
-
-    // Keep UI ticking
-    setInterval(() => { if (state.timerRunning) renderTimer(); }, 1000);
-
-
-    // --- 6. TASK ENGINE ---
     function renderTasks() {
-        const list = document.getElementById('tasksList');
-        
-        // Sort: Undone first, then by creation date. Completed items fall to bottom.
-        let displayTasks = [...state.tasks].sort((a, b) => {
-            if (a.done !== b.done) return a.done ? 1 : -1;
-            return b.createdAt - a.createdAt; // Newest at top
-        });
-
-        list.innerHTML = displayTasks.map(t => `
+        document.getElementById('tasksList').innerHTML = state.tasks.map(t => `
             <div class="card ${t.done ? 'done' : ''}">
-                <div class="item-main">
-                    <span class="item-sub">${t.dateLabel}</span>
-                    <span class="item-title">${t.title}</span>
-                </div>
-                <button onclick="toggleTask('${t.id}')" class="btn-check ${t.done ? 'done' : ''}">
-                    ${t.done ? '✓ Done' : 'Complete'}
-                </button>
+                <div class="item-main"><span class="item-sub">${t.date}</span><span class="item-title">${t.title}</span></div>
+                <button onclick="toggleTask('${t.id}')" class="btn-check ${t.done ? 'done' : ''}">${t.done ? '✓' : 'Done'}</button>
             </div>
         `).join('');
-
-        const doneCount = state.tasks.filter(t => t.done).length;
-        document.getElementById('progressText').textContent = `${doneCount}/${state.tasks.length} Done`;
     }
 
-    document.getElementById('addTaskForm').onsubmit = (e) => {
-        e.preventDefault();
-        const input = document.getElementById('newTaskInput');
-        const title = input.value.trim();
-        
-        if (title) {
-            state.tasks.push({
-                id: randomId(),
-                dateLabel: 'Custom Addition',
-                title: title,
-                done: false,
-                createdAt: Date.now()
-            });
-            input.value = '';
-            saveAndSync();
-            renderTasks();
-        }
-    };
-
-    window.toggleTask = (id) => {
-        const task = state.tasks.find(t => t.id === id);
-        if (task) { 
-            task.done = !task.done; 
-            saveAndSync(); 
-            renderTasks(); 
-        }
-    };
-
-    // --- 7. EXAMS ENGINE ---
     function renderExams() {
-        const list = document.getElementById('examsList');
         const today = new Date();
-        today.setHours(0,0,0,0);
-
-        list.innerHTML = exams.map(e => {
-            const diffTime = e.date - today;
-            const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (days < 0) return ''; // Hide past exams
-            
-            let color = 'var(--text-main)';
-            if (days <= 14) color = 'var(--accent)';
-            if (days <= 3) color = 'var(--success)';
-
-            return `
-                <div class="card" style="padding: 1rem;">
-                    <div class="item-main">
-                        <span class="item-title">${e.subject}</span>
-                        <span class="item-sub">${e.paper}</span>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="font-weight: 800; font-size: 1.2rem; color: ${color};">
-                            ${days === 0 ? 'TODAY' : days}
-                        </span>
-                        <div class="item-sub" style="font-size: 0.7rem;">${days === 0 ? '' : 'DAYS LEFT'}</div>
-                    </div>
-                </div>
-            `;
+        today.setHours(0,0,0,0); // Strip time for clean day count
+        document.getElementById('examsList').innerHTML = exams.map(e => {
+            const examDate = new Date(e.date);
+            examDate.setHours(0,0,0,0);
+            const diff = Math.round((examDate - today) / (1000*60*60*24));
+            if (diff < 0) return '';
+            return `<div class="card"><div class="item-main"><span>${e.name}</span></div><div style="font-weight:800; color:${diff <= 7 ? 'var(--accent)' : 'var(--text)'}">${diff === 0 ? 'TODAY' : diff + ' Days'}</div></div>`;
         }).join('');
     }
 
-    // --- 8. INITIALIZATION ---
-    function renderAll() {
-        renderTimer();
-        renderTasks();
-        renderExams();
-    }
+    function renderAll() { renderTimer(); renderTasks(); renderExams(); }
 
+    document.getElementById('toggleTimerBtn').onclick = () => {
+        if (state.timerRunning) {
+            state.timeLeft -= Math.floor((Date.now() - state.lastStartMs)/1000);
+            state.timerRunning = false;
+        } else {
+            state.lastStartMs = Date.now();
+            state.timerRunning = true;
+        }
+        save(); renderTimer();
+    };
+
+    window.setCustomTimer = (m) => { state.timerRunning = false; state.timeLeft = m*60; save(); renderTimer(); };
+    window.toggleTask = (id) => { const t = state.tasks.find(x => x.id === id); if(t) { t.done = !t.done; save(); renderTasks(); } };
+
+    setInterval(() => { if (state.timerRunning) renderTimer(); }, 1000);
     renderAll();
 </script>
 </body>
