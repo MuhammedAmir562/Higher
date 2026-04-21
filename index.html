@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Higher Exam Command Center</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a; --panel-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
+            --english-color: #3b82f6; --maths-color: #d946ef; --chem-color: #10b981; 
+            --comp-color: #f59e0b; --phys-color: #ef4444;
+        }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+        header { background-color: #020617; padding: 1.5rem; text-align: center; border-bottom: 2px solid #334155; }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
+        .progress-container { width: 80%; max-width: 600px; background-color: var(--panel-bg); border-radius: 10px; margin: 1rem auto 0; height: 20px; overflow: hidden; border: 1px solid #334155; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--english-color), var(--maths-color)); width: 0%; transition: width 0.4s ease; }
+        .main-container { display: flex; flex-wrap: wrap; padding: 1.5rem; gap: 1.5rem; max-width: 1200px; margin: 0 auto; flex: 1; }
+        .countdowns { flex: 1; min-width: 250px; background-color: var(--panel-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid #334155; height: fit-content; }
+        .countdowns h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        .exam-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .exam-name { font-weight: bold; }
+        .days-left { font-size: 1.2rem; font-weight: bold; padding: 0.3rem 0.6rem; border-radius: 6px; }
+        .c-eng { color: var(--english-color); } .c-mat { color: var(--maths-color); } .c-che { color: var(--chem-color); } .c-com { color: var(--comp-color); } .c-phy { color: var(--phys-color); }
+        .bg-eng { background-color: rgba(59, 130, 246, 0.2); border: 1px solid var(--english-color); }
+        .bg-mat { background-color: rgba(217, 70, 239, 0.2); border: 1px solid var(--maths-color); }
+        .bg-che { background-color: rgba(16, 185, 129, 0.2); border: 1px solid var(--chem-color); }
+        .bg-com { background-color: rgba(245, 158, 11, 0.2); border: 1px solid var(--comp-color); }
+        .bg-phy { background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--phys-color); }
+        .schedule { flex: 3; min-width: 300px; }
+        .phase { background-color: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #334155; }
+        .phase h3 { margin-top: 0; color: var(--text-muted); font-size: 1.1rem; text-transform: uppercase; }
+        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+        .task-card { background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; transition: transform 0.2s; }
+        .task-date { font-size: 0.9rem; color: var(--text-muted); }
+        .task-subject { font-weight: bold; font-size: 1.1rem; }
+        .task-desc { font-size: 0.85rem; color: #cbd5e1; flex-grow: 1; }
+        .check-btn { background-color: transparent; border: 2px solid #475569; color: var(--text-main); padding: 0.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s; margin-top: auto; }
+        .check-btn.completed { background-color: #10b981; border-color: #10b981; color: #020617; }
+        .strategy-box { background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(217,70,239,0.1)); border: 1px solid var(--english-color); border-radius: 8px; padding: 1rem; margin-top: 1.5rem; }
+        @media (max-width: 768px) { .main-container { flex-direction: column; } .countdowns { order: -1; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>HIGHER EXAM COMMAND CENTER</h1>
+        <p style="margin: 0.5rem 0 0; color: var(--text-muted);">Goal: 3 Hours Daily Focus</p>
+        <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+        <p id="progressText" style="font-size: 0.85rem; margin-top: 0.5rem;">Connecting to Cloud...</p>
+    </header>
+
+    <div class="main-container">
+        <aside class="countdowns">
+            <h2>EXAM COUNTDOWNS</h2>
+            <div id="countdownList"></div>
+            <div class="strategy-box">
+                <h3 style="margin-top:0; color: var(--english-color);">💡 English Strategy</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 0;"><strong>Memorize & Adapt:</strong> Don't just regurgitate the essay. Force your memorized quotes to answer the exact wording of the prompt.</p>
+            </div>
+        </aside>
+
+        <main class="schedule" id="scheduleContainer"></main>
+    </div>
+
+    <script>
+        // --- 1. YOUR FIREBASE CONFIG IS NOW LOCKED IN HERE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBojGtfnEB3aj4my_QBRBD5rTrshSXTjag",
+            authDomain: "higherexams.firebaseapp.com",
+            projectId: "higherexams",
+            storageBucket: "higherexams.firebasestorage.app",
+            messagingSenderId: "768134563319",
+            appId: "1:768134563319:web:2e1729cedf42f42683daf2"
+        };
+        // ------------------------------------------
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const docRef = db.collection('studyData').doc('myProgress');
+
+        // Data Setup
+        const exams = [
+            { name: "English", date: new Date("2026-05-01T09:00:00"), class: "eng" },
+            { name: "Mathematics", date: new Date("2026-05-07T09:00:00"), class: "mat" },
+            { name: "Chemistry", date: new Date("2026-05-12T09:00:00"), class: "che" },
+            { name: "Computing", date: new Date("2026-05-20T09:00:00"), class: "com" },
+            { name: "Physics", date: new Date("2026-05-21T09:00:00"), class: "phy" }
+        ];
+
+        const schedule = [
+            { id: "t1", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 22", subject: "English", desc: "3h - Essay Adaptation Practice", class: "eng" },
+            { id: "t2", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 23", subject: "English", desc: "3h - RUAE Timed Past Paper", class: "eng" },
+            { id: "t3", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 24", subject: "Mathematics", desc: "3h - Non-Calc Drills", class: "mat" },
+            { id: "t4", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 25", subject: "English", desc: "3h - Quote Bank Active Recall", class: "eng" },
+            { id: "t5", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 26", subject: "Chemistry", desc: "3h - Warmup & Data Booklet", class: "che" },
+            { id: "t6", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 27", subject: "English", desc: "3h - Full Essay Timed", class: "eng" },
+            { id: "t7", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 28", subject: "Computing", desc: "3h - Warmup & Web Dev", class: "com" },
+            { id: "t8", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 29", subject: "Physics", desc: "3h - Warmup & Formulas", class: "phy" },
+            { id: "t9", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 30", subject: "English", desc: "3h - Final Pre-Exam Review", class: "eng" },
+            
+            { id: "t10", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 2", subject: "Mathematics", desc: "3h - Heavy Calculator Past Papers", class: "mat" },
+            { id: "t11", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 3", subject: "Chemistry", desc: "3h - Multiple Choice Focus", class: "che" },
+            { id: "t12", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 4", subject: "Mathematics", desc: "3h - Weak Topic Targeting", class: "mat" },
+            { id: "t13", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 5", subject: "Mathematics", desc: "3h - SQA Marking Logic Analysis", class: "mat" },
+            { id: "t14", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 6", subject: "Mathematics", desc: "3h - Final Pre-Exam Review", class: "mat" },
+
+            { id: "t15", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 8", subject: "Computing", desc: "3h - Code Tracing", class: "com" },
+            { id: "t16", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 9", subject: "Chemistry", desc: "3h - Section 2 Extended Responses", class: "che" },
+            { id: "t17", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 10", subject: "Chemistry", desc: "3h - Past Paper under time", class: "che" },
+            { id: "t18", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 11", subject: "Chemistry", desc: "3h - Final Pre-Exam Review", class: "che" }
+        ];
+
+        let globalProgress = {};
+
+        function updateCountdowns() {
+            const today = new Date(); 
+            const list = document.getElementById('countdownList');
+            exams.forEach(exam => {
+                const diffTime = exam.date - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                let daysText = diffDays > 0 ? diffDays + " Days" : (diffDays === 0 ? "TODAY" : "DONE");
+                list.innerHTML += `<div class="exam-item"><span class="exam-name c-${exam.class}">${exam.name}</span><span class="days-left bg-${exam.class} c-${exam.class}">${daysText}</span></div>`;
+            });
+        }
+
+        function renderSchedule() {
+            const container = document.getElementById('scheduleContainer');
+            container.innerHTML = ""; 
+            const phases = [...new Set(schedule.map(t => t.phase))];
+            
+            phases.forEach(phaseName => {
+                const phaseTasks = schedule.filter(t => t.phase === phaseName);
+                let phaseHTML = `<div class="phase"><h3>${phaseName}</h3><div class="task-grid">`;
+                
+                phaseTasks.forEach(task => {
+                    const isDone = globalProgress[task.id] ? "completed" : "";
+                    const btnText = globalProgress[task.id] ? "Completed ✓" : "Mark 3h Complete";
+                    phaseHTML += `
+                        <div class="task-card" style="border-top: 3px solid var(--${task.class}-color)">
+                            <div class="task-date">${task.date}</div>
+                            <div class="task-subject c-${task.class}">${task.subject}</div>
+                            <div class="task-desc">${task.desc}</div>
+                            <button id="btn-${task.id}" class="check-btn ${isDone}" onclick="toggleTask('${task.id}')">${btnText}</button>
+                        </div>`;
+                });
+                phaseHTML += `</div></div>`;
+                container.innerHTML += phaseHTML;
+            });
+            updateProgressBar();
+        }
+
+        window.toggleTask = function(taskId) {
+            globalProgress[taskId] = !globalProgress[taskId];
+            docRef.set(globalProgress).catch(err => console.error("Firebase Sync Error: ", err));
+        }
+
+        function updateProgressBar() {
+            const completedCount = Object.values(globalProgress).filter(v => v === true).length;
+            const percentage = Math.round((completedCount / schedule.length) * 100);
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressText').innerText = percentage + '% A-Grade Readiness Achieved';
+        }
+
+        docRef.onSnapshot((doc) => {
+            if (doc.exists) {
+                globalProgress = doc.data();
+            } else {
+                globalProgress = {};
+            }
+            renderSchedule(); 
+        });
+
+        updateCountdowns();
+    </script>
+</body>
+</html>
