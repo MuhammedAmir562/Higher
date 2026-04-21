@@ -3,163 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Higher Command Center | Pro</title>
+    <title>Higher Exam Command Center</title>
+    
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+
     <style>
-        :root { --bg:#09090b; --panel:rgba(24,24,27,0.7); --border:rgba(255,255,255,0.1); --text:#f8fafc; --muted:#a1a1aa; --accent:#3b82f6; --success:#10b981; }
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); background-image: radial-gradient(circle at top right, rgba(59,130,246,0.1), transparent 400px); color: var(--text); padding: 1.5rem; min-height: 100vh; }
-        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; }
-        @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
-        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
-        h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.5px; }
-        h2 { font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin: 1.5rem 0 1rem; }
-        .sync-badge { font-size: 0.75rem; color: var(--success); background: rgba(16,185,129,0.1); padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(16,185,129,0.2); }
-        .timer-display { text-align: center; padding: 1rem 0; }
-        .time { font-size: 4.5rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -2px; }
-        .time.running { color: var(--accent); text-shadow: 0 0 20px rgba(59,130,246,0.4); }
-        .btn-giant { background: var(--text); color: #000; border: none; padding: 1rem; font-size: 1.1rem; font-weight: bold; border-radius: 12px; width: 100%; cursor: pointer; transition: 0.2s; }
-        .btn-giant.running { background: rgba(255,255,255,0.1); color: var(--text); }
-        .card { background: rgba(39,39,42,0.4); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
-        .card.done { opacity: 0.4; }
-        .item-main { display: flex; flex-direction: column; gap: 0.2rem; }
-        .item-title { font-weight: 600; }
-        .item-sub { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: bold; }
-        .btn-check { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
-        .btn-check.done { background: var(--success); border-color: var(--success); color: #000; }
+        :root {
+            --bg-color: #0f172a; --panel-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8;
+            --english-color: #3b82f6; --maths-color: #d946ef; --chem-color: #10b981; 
+            --comp-color: #f59e0b; --phys-color: #ef4444;
+        }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+        header { background-color: #020617; padding: 1.5rem; text-align: center; border-bottom: 2px solid #334155; }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
+        .progress-container { width: 80%; max-width: 600px; background-color: var(--panel-bg); border-radius: 10px; margin: 1rem auto 0; height: 20px; overflow: hidden; border: 1px solid #334155; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, var(--english-color), var(--maths-color)); width: 0%; transition: width 0.4s ease; }
+        .main-container { display: flex; flex-wrap: wrap; padding: 1.5rem; gap: 1.5rem; max-width: 1200px; margin: 0 auto; flex: 1; }
+        .countdowns { flex: 1; min-width: 250px; background-color: var(--panel-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid #334155; height: fit-content; }
+        .countdowns h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        .exam-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .exam-name { font-weight: bold; }
+        .days-left { font-size: 1.2rem; font-weight: bold; padding: 0.3rem 0.6rem; border-radius: 6px; }
+        .c-eng { color: var(--english-color); } .c-mat { color: var(--maths-color); } .c-che { color: var(--chem-color); } .c-com { color: var(--comp-color); } .c-phy { color: var(--phys-color); }
+        .bg-eng { background-color: rgba(59, 130, 246, 0.2); border: 1px solid var(--english-color); }
+        .bg-mat { background-color: rgba(217, 70, 239, 0.2); border: 1px solid var(--maths-color); }
+        .bg-che { background-color: rgba(16, 185, 129, 0.2); border: 1px solid var(--chem-color); }
+        .bg-com { background-color: rgba(245, 158, 11, 0.2); border: 1px solid var(--comp-color); }
+        .bg-phy { background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--phys-color); }
+        .schedule { flex: 3; min-width: 300px; }
+        .phase { background-color: var(--panel-bg); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #334155; }
+        .phase h3 { margin-top: 0; color: var(--text-muted); font-size: 1.1rem; text-transform: uppercase; }
+        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+        .task-card { background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; transition: transform 0.2s; }
+        .task-date { font-size: 0.9rem; color: var(--text-muted); }
+        .task-subject { font-weight: bold; font-size: 1.1rem; }
+        .task-desc { font-size: 0.85rem; color: #cbd5e1; flex-grow: 1; }
+        .check-btn { background-color: transparent; border: 2px solid #475569; color: var(--text-main); padding: 0.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s; margin-top: auto; }
+        .check-btn.completed { background-color: #10b981; border-color: #10b981; color: #020617; }
+        .strategy-box { background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(217,70,239,0.1)); border: 1px solid var(--english-color); border-radius: 8px; padding: 1rem; margin-top: 1.5rem; }
+        @media (max-width: 768px) { .main-container { flex-direction: column; } .countdowns { order: -1; } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="panel">
-        <header style="display:flex; justify-content:space-between; align-items:center;">
-            <h1>Higher Roadmap</h1>
-            <div class="sync-badge">Live Synced</div>
-        </header>
+    <header>
+        <h1>HIGHER EXAM COMMAND CENTER</h1>
+        <p style="margin: 0.5rem 0 0; color: var(--text-muted);">Goal: 3 Hours Daily Focus</p>
+        <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+        <p id="progressText" style="font-size: 0.85rem; margin-top: 0.5rem;">Connecting to Cloud...</p>
+    </header>
+
+    <div class="main-container">
+        <aside class="countdowns">
+            <h2>EXAM COUNTDOWNS</h2>
+            <div id="countdownList"></div>
+            <div class="strategy-box">
+                <h3 style="margin-top:0; color: var(--english-color);">💡 English Strategy</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 0;"><strong>Memorize & Adapt:</strong> Don't just regurgitate the essay. Force your memorized quotes to answer the exact wording of the prompt.</p>
+            </div>
+        </aside>
+
+        <main class="schedule" id="scheduleContainer"></main>
+    </div>
+
+    <script>
+        // --- 1. YOUR FIREBASE CONFIG IS NOW LOCKED IN HERE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBojGtfnEB3aj4my_QBRBD5rTrshSXTjag",
+            authDomain: "higherexams.firebaseapp.com",
+            projectId: "higherexams",
+            storageBucket: "higherexams.firebasestorage.app",
+            messagingSenderId: "768134563319",
+            appId: "1:768134563319:web:2e1729cedf42f42683daf2"
+        };
+        // ------------------------------------------
         
-        <h2>Study Schedule (3h Blocks)</h2>
-        <div id="tasksList"></div>
-    </div>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const docRef = db.collection('studyData').doc('myProgress');
 
-    <div style="display:flex; flex-direction:column; gap:1.5rem;">
-        <div class="panel">
-            <div class="timer-display">
-                <div class="time" id="timerDisplay">03:00:00</div>
-            </div>
-            <button id="toggleTimerBtn" class="btn-giant">▶ Start Timer</button>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; margin-top:1rem;">
-                <button onclick="setCustomTimer(25)" style="background:none; border:1px solid var(--border); color:var(--muted); padding:0.5rem; border-radius:8px; cursor:pointer;">25m Pom</button>
-                <button onclick="setCustomTimer(180)" style="background:none; border:1px solid var(--border); color:var(--muted); padding:0.5rem; border-radius:8px; cursor:pointer;">3h Exam</button>
-            </div>
-        </div>
+        // Data Setup
+        const exams = [
+            { name: "English", date: new Date("2026-05-01T09:00:00"), class: "eng" },
+            { name: "Mathematics", date: new Date("2026-05-07T09:00:00"), class: "mat" },
+            { name: "Chemistry", date: new Date("2026-05-12T09:00:00"), class: "che" },
+            { name: "Computing", date: new Date("2026-05-20T09:00:00"), class: "com" },
+            { name: "Physics", date: new Date("2026-05-21T09:00:00"), class: "phy" }
+        ];
 
-        <div class="panel">
-            <h2>Exam Countdown</h2>
-            <div id="examsList"></div>
-        </div>
-    </div>
-</div>
+        const schedule = [
+            { id: "t1", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 22", subject: "English", desc: "3h - Essay Adaptation Practice", class: "eng" },
+            { id: "t2", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 23", subject: "English", desc: "3h - RUAE Timed Past Paper", class: "eng" },
+            { id: "t3", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 24", subject: "Mathematics", desc: "3h - Non-Calc Drills", class: "mat" },
+            { id: "t4", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 25", subject: "English", desc: "3h - Quote Bank Active Recall", class: "eng" },
+            { id: "t5", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 26", subject: "Chemistry", desc: "3h - Warmup & Data Booklet", class: "che" },
+            { id: "t6", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 27", subject: "English", desc: "3h - Full Essay Timed", class: "eng" },
+            { id: "t7", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 28", subject: "Computing", desc: "3h - Warmup & Web Dev", class: "com" },
+            { id: "t8", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 29", subject: "Physics", desc: "3h - Warmup & Formulas", class: "phy" },
+            { id: "t9", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 30", subject: "English", desc: "3h - Final Pre-Exam Review", class: "eng" },
+            
+            { id: "t10", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 2", subject: "Mathematics", desc: "3h - Heavy Calculator Past Papers", class: "mat" },
+            { id: "t11", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 3", subject: "Chemistry", desc: "3h - Multiple Choice Focus", class: "che" },
+            { id: "t12", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 4", subject: "Mathematics", desc: "3h - Weak Topic Targeting", class: "mat" },
+            { id: "t13", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 5", subject: "Mathematics", desc: "3h - SQA Marking Logic Analysis", class: "mat" },
+            { id: "t14", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 6", subject: "Mathematics", desc: "3h - Final Pre-Exam Review", class: "mat" },
 
-<script>
-    const firebaseConfig = { apiKey: "AIzaSyBojGtfnEB3aj4my_QBRBD5rTrshSXTjag", authDomain: "higherexams.firebaseapp.com", projectId: "higherexams" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore().collection('studyData').doc('premiumState');
+            { id: "t15", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 8", subject: "Computing", desc: "3h - Code Tracing", class: "com" },
+            { id: "t16", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 9", subject: "Chemistry", desc: "3h - Section 2 Extended Responses", class: "che" },
+            { id: "t17", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 10", subject: "Chemistry", desc: "3h - Past Paper under time", class: "che" },
+            { id: "t18", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 11", subject: "Chemistry", desc: "3h - Final Pre-Exam Review", class: "che" }
+        ];
 
-    // EXAMS
-    const exams = [
-        { name: 'English (RUAE & Critical)', date: new Date('2026-05-01') },
-        { name: 'Mathematics (P1 & P2)', date: new Date('2026-05-07') },
-        { name: 'Chemistry (MC & P2)', date: new Date('2026-05-12') },
-        { name: 'Computing Science', date: new Date('2026-05-20') },
-        { name: 'Physics (MC & P2)', date: new Date('2026-05-21') }
-    ];
+        let globalProgress = {};
 
-    // FULL STUDY TIMETABLE
-    const initialTasks = [
-        { id: 't1', date: 'Apr 22', title: 'English: Essay Adaptation', done: false },
-        { id: 't2', date: 'Apr 23', title: 'English: RUAE Past Paper', done: false },
-        { id: 't3', date: 'Apr 24', title: 'Maths: Non-Calc Drills', done: false },
-        { id: 't4', date: 'Apr 25', title: 'English: Quote Bank Memory', done: false },
-        { id: 't5', date: 'Apr 26', title: 'Chemistry: Data Booklet Master', done: false },
-        { id: 't6', date: 'Apr 27', title: 'English: Full Essay Timed', done: false },
-        { id: 't7', date: 'Apr 28', title: 'Computing: Web/DB Design', done: false },
-        { id: 't8', date: 'Apr 29', title: 'Physics: Formula Focus', done: false },
-        { id: 't9', date: 'Apr 30', title: 'English: Final Review', done: false },
-        { id: 't10', date: 'May 2', title: 'Maths: Heavy Calculator Qs', done: false },
-        { id: 't11', date: 'May 3', title: 'Chemistry: Multiple Choice', done: false },
-        { id: 't12', date: 'May 4', title: 'Maths: Past Paper Practice', done: false },
-        { id: 't13', date: 'May 5', title: 'Maths: SQA Logic Analysis', done: false },
-        { id: 't14', date: 'May 6', title: 'Maths: Final P2 Review', done: false }
-    ];
-
-    let state = JSON.parse(localStorage.getItem('premiumState')) || { timerRunning: false, timeLeft: 10800, tasks: initialTasks };
-
-    function save() { 
-        localStorage.setItem('premiumState', JSON.stringify(state)); 
-        db.set(state).catch(() => {}); 
-    }
-
-    db.onSnapshot(doc => { if (doc.exists) { state = doc.data(); renderAll(); } });
-
-    function formatTime(s) {
-        const h = String(Math.floor(s/3600)).padStart(2, '0');
-        const m = String(Math.floor((s%3600)/60)).padStart(2, '0');
-        const sc = String(s%60).padStart(2, '0');
-        return `${h}:${m}:${sc}`;
-    }
-
-    function renderTimer() {
-        let left = state.timeLeft;
-        if (state.timerRunning && state.lastStartMs) {
-            left = Math.max(0, state.timeLeft - Math.floor((Date.now() - state.lastStartMs)/1000));
+        function updateCountdowns() {
+            const today = new Date(); 
+            const list = document.getElementById('countdownList');
+            exams.forEach(exam => {
+                const diffTime = exam.date - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                let daysText = diffDays > 0 ? diffDays + " Days" : (diffDays === 0 ? "TODAY" : "DONE");
+                list.innerHTML += `<div class="exam-item"><span class="exam-name c-${exam.class}">${exam.name}</span><span class="days-left bg-${exam.class} c-${exam.class}">${daysText}</span></div>`;
+            });
         }
-        const disp = document.getElementById('timerDisplay');
-        disp.textContent = formatTime(left);
-        disp.className = state.timerRunning ? 'time running' : 'time';
-        document.getElementById('toggleTimerBtn').textContent = state.timerRunning ? '⏸ Pause' : '▶ Start Study';
-    }
 
-    function renderTasks() {
-        document.getElementById('tasksList').innerHTML = state.tasks.map(t => `
-            <div class="card ${t.done ? 'done' : ''}">
-                <div class="item-main"><span class="item-sub">${t.date}</span><span class="item-title">${t.title}</span></div>
-                <button onclick="toggleTask('${t.id}')" class="btn-check ${t.done ? 'done' : ''}">${t.done ? '✓' : 'Done'}</button>
-            </div>
-        `).join('');
-    }
-
-    function renderExams() {
-        const today = new Date();
-        today.setHours(0,0,0,0); // Strip time for clean day count
-        document.getElementById('examsList').innerHTML = exams.map(e => {
-            const examDate = new Date(e.date);
-            examDate.setHours(0,0,0,0);
-            const diff = Math.round((examDate - today) / (1000*60*60*24));
-            if (diff < 0) return '';
-            return `<div class="card"><div class="item-main"><span>${e.name}</span></div><div style="font-weight:800; color:${diff <= 7 ? 'var(--accent)' : 'var(--text)'}">${diff === 0 ? 'TODAY' : diff + ' Days'}</div></div>`;
-        }).join('');
-    }
-
-    function renderAll() { renderTimer(); renderTasks(); renderExams(); }
-
-    document.getElementById('toggleTimerBtn').onclick = () => {
-        if (state.timerRunning) {
-            state.timeLeft -= Math.floor((Date.now() - state.lastStartMs)/1000);
-            state.timerRunning = false;
-        } else {
-            state.lastStartMs = Date.now();
-            state.timerRunning = true;
+        function renderSchedule() {
+            const container = document.getElementById('scheduleContainer');
+            container.innerHTML = ""; 
+            const phases = [...new Set(schedule.map(t => t.phase))];
+            
+            phases.forEach(phaseName => {
+                const phaseTasks = schedule.filter(t => t.phase === phaseName);
+                let phaseHTML = `<div class="phase"><h3>${phaseName}</h3><div class="task-grid">`;
+                
+                phaseTasks.forEach(task => {
+                    const isDone = globalProgress[task.id] ? "completed" : "";
+                    const btnText = globalProgress[task.id] ? "Completed ✓" : "Mark 3h Complete";
+                    phaseHTML += `
+                        <div class="task-card" style="border-top: 3px solid var(--${task.class}-color)">
+                            <div class="task-date">${task.date}</div>
+                            <div class="task-subject c-${task.class}">${task.subject}</div>
+                            <div class="task-desc">${task.desc}</div>
+                            <button id="btn-${task.id}" class="check-btn ${isDone}" onclick="toggleTask('${task.id}')">${btnText}</button>
+                        </div>`;
+                });
+                phaseHTML += `</div></div>`;
+                container.innerHTML += phaseHTML;
+            });
+            updateProgressBar();
         }
-        save(); renderTimer();
-    };
 
-    window.setCustomTimer = (m) => { state.timerRunning = false; state.timeLeft = m*60; save(); renderTimer(); };
-    window.toggleTask = (id) => { const t = state.tasks.find(x => x.id === id); if(t) { t.done = !t.done; save(); renderTasks(); } };
+        window.toggleTask = function(taskId) {
+            globalProgress[taskId] = !globalProgress[taskId];
+            docRef.set(globalProgress).catch(err => console.error("Firebase Sync Error: ", err));
+        }
 
-    setInterval(() => { if (state.timerRunning) renderTimer(); }, 1000);
-    renderAll();
-</script>
+        function updateProgressBar() {
+            const completedCount = Object.values(globalProgress).filter(v => v === true).length;
+            const percentage = Math.round((completedCount / schedule.length) * 100);
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressText').innerText = percentage + '% A-Grade Readiness Achieved';
+        }
+
+        docRef.onSnapshot((doc) => {
+            if (doc.exists) {
+                globalProgress = doc.data();
+            } else {
+                globalProgress = {};
+            }
+            renderSchedule(); 
+        });
+
+        updateCountdowns();
+    </script>
 </body>
 </html>
