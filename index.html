@@ -41,6 +41,18 @@
         .task-desc { font-size: 0.85rem; color: #cbd5e1; flex-grow: 1; }
         .check-btn { background-color: transparent; border: 2px solid #475569; color: var(--text-main); padding: 0.5rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s; margin-top: auto; }
         .check-btn.completed { background-color: #10b981; border-color: #10b981; color: #020617; }
+        .check-btn:disabled { cursor: not-allowed; opacity: 0.55; }
+        .task-lock-note { font-size: 0.75rem; color: #fbbf24; }
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+        .controls input, .controls select, .controls button { width: 100%; background-color: #020617; color: var(--text-main); border: 1px solid #334155; border-radius: 6px; padding: 0.55rem; }
+        .empty-state { text-align: center; color: var(--text-muted); border: 1px dashed #475569; border-radius: 8px; padding: 1.5rem; }
+        .timer-card { background-color: #0b1225; border: 1px solid #334155; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+        .timer-display { font-size: 2rem; font-weight: bold; letter-spacing: 1px; text-align: center; margin: 0.5rem 0; }
+        .timer-actions, .timer-presets { display: flex; gap: 0.5rem; }
+        .timer-actions button, .timer-presets button { flex: 1; background-color: #020617; color: var(--text-main); border: 1px solid #334155; border-radius: 6px; padding: 0.5rem; cursor: pointer; }
+        .release-notes { font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; border-top: 1px solid #334155; padding-top: 0.75rem; }
+        .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #0b1225; border: 1px solid #334155; color: var(--text-main); border-radius: 8px; padding: 0.8rem 1rem; max-width: 90vw; width: fit-content; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; z-index: 1000; }
+        .toast.show { opacity: 1; }
         .strategy-box { background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(217,70,239,0.1)); border: 1px solid var(--english-color); border-radius: 8px; padding: 1rem; margin-top: 1.5rem; }
         @media (max-width: 768px) { .main-container { flex-direction: column; } .countdowns { order: -1; } }
     </style>
@@ -58,17 +70,61 @@
         <aside class="countdowns">
             <h2>EXAM COUNTDOWNS</h2>
             <div id="countdownList"></div>
+            <section class="timer-card" aria-label="Focus timer">
+                <h3 style="margin:0; color: var(--comp-color);">⏱ Focus Timer</h3>
+                <p id="timerStatus" style="margin: 0.4rem 0 0; color: var(--text-muted); font-size: 0.8rem;">Ready</p>
+                <div class="timer-display" id="timerDisplay">03:00:00</div>
+                <div class="timer-presets">
+                    <button type="button" data-timer-min="25">25m</button>
+                    <button type="button" data-timer-min="50">50m</button>
+                    <button type="button" data-timer-min="180">3h</button>
+                </div>
+                <div class="timer-actions" style="margin-top:0.5rem;">
+                    <button type="button" id="timerToggleBtn">Start</button>
+                    <button type="button" id="timerResetBtn">Reset</button>
+                </div>
+                <label for="defaultTimerMinutesInput" style="display:block; margin-top:0.6rem; font-size: 0.8rem; color: var(--text-muted);">Default minutes</label>
+                <input id="defaultTimerMinutesInput" type="number" min="5" max="360" step="5" style="width:100%; background-color:#020617; color: var(--text-main); border: 1px solid #334155; border-radius: 6px; padding: 0.45rem;" />
+            </section>
             <div class="strategy-box">
                 <h3 style="margin-top:0; color: var(--english-color);">💡 English Strategy</h3>
                 <p style="font-size: 0.9rem; margin-bottom: 0;"><strong>Memorize & Adapt:</strong> Don't just regurgitate the essay. Force your memorized quotes to answer the exact wording of the prompt.</p>
             </div>
+            <div class="release-notes">
+                <strong>New in this update</strong>
+                <ul style="margin:0.5rem 0 0; padding-left: 1rem;">
+                    <li>Future-dated tasks are date-locked until their day arrives.</li>
+                    <li>Built-in focus timer with background-safe resume.</li>
+                    <li>Task search/filter controls with empty-state guidance.</li>
+                    <li>Keyboard shortcuts: Ctrl/Cmd+F (focus search), Alt+Shift+T (toggle timer).</li>
+                </ul>
+            </div>
         </aside>
 
-        <main class="schedule" id="scheduleContainer"></main>
+        <main class="schedule">
+            <section class="controls" aria-label="Task controls">
+                <input id="searchInput" type="search" placeholder="Search subject or task..." aria-label="Search tasks" />
+                <select id="subjectFilter" aria-label="Filter by subject">
+                    <option value="all">All subjects</option>
+                </select>
+                <select id="statusFilter" aria-label="Filter by status">
+                    <option value="all">All statuses</option>
+                    <option value="available">Available now</option>
+                    <option value="locked">Locked by date</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <select id="sortSelect" aria-label="Sort tasks">
+                    <option value="date-asc">Sort: Date (oldest first)</option>
+                    <option value="date-desc">Sort: Date (newest first)</option>
+                    <option value="subject">Sort: Subject</option>
+                </select>
+            </section>
+            <section id="scheduleContainer"></section>
+        </main>
     </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script>
-        // --- 1. YOUR FIREBASE CONFIG IS NOW LOCKED IN HERE ---
         const firebaseConfig = {
             apiKey: "AIzaSyBojGtfnEB3aj4my_QBRBD5rTrshSXTjag",
             authDomain: "higherexams.firebaseapp.com",
@@ -77,13 +133,23 @@
             messagingSenderId: "768134563319",
             appId: "1:768134563319:web:2e1729cedf42f42683daf2"
         };
-        // ------------------------------------------
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const docRef = db.collection('studyData').doc('myProgress');
 
-        // Data Setup
+        let docRef = null;
+        if (window.firebase && typeof window.firebase.initializeApp === 'function') {
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            docRef = db.collection('studyData').doc('myProgress');
+        }
+        const PROGRESS_STORAGE_KEY = 'higher-progress';
+        const TIMER_STORAGE_KEY = 'higher-timer-state';
+        const SETTINGS_STORAGE_KEY = 'higher-settings';
+        const SCHEDULE_YEAR = 2026;
+        const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        const TOAST_DISPLAY_DURATION_MS = 2600;
+        const CLOCK_DRIFT_DETECTION_MS = 5 * 60 * 1000;
+        const CLOCK_DRIFT_THROTTLE_MS = 5 * 60 * 1000;
+
         const exams = [
             { name: "English", date: new Date("2026-05-01T09:00:00"), class: "eng" },
             { name: "Mathematics", date: new Date("2026-05-07T09:00:00"), class: "mat" },
@@ -102,13 +168,11 @@
             { id: "t7", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 28", subject: "Computing", desc: "3h - Warmup & Web Dev", class: "com" },
             { id: "t8", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 29", subject: "Physics", desc: "3h - Warmup & Formulas", class: "phy" },
             { id: "t9", phase: "Phase 1: English Domination (Apr 22 - 30)", date: "Apr 30", subject: "English", desc: "3h - Final Pre-Exam Review", class: "eng" },
-            
             { id: "t10", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 2", subject: "Mathematics", desc: "3h - Heavy Calculator Past Papers", class: "mat" },
             { id: "t11", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 3", subject: "Chemistry", desc: "3h - Multiple Choice Focus", class: "che" },
             { id: "t12", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 4", subject: "Mathematics", desc: "3h - Weak Topic Targeting", class: "mat" },
             { id: "t13", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 5", subject: "Mathematics", desc: "3h - SQA Marking Logic Analysis", class: "mat" },
             { id: "t14", phase: "Phase 2: Maths Intensity (May 2 - 6)", date: "May 6", subject: "Mathematics", desc: "3h - Final Pre-Exam Review", class: "mat" },
-
             { id: "t15", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 8", subject: "Computing", desc: "3h - Code Tracing", class: "com" },
             { id: "t16", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 9", subject: "Chemistry", desc: "3h - Section 2 Extended Responses", class: "che" },
             { id: "t17", phase: "Phase 3: Chemistry Crunch (May 8 - 11)", date: "May 10", subject: "Chemistry", desc: "3h - Past Paper under time", class: "che" },
@@ -116,66 +180,346 @@
         ];
 
         let globalProgress = {};
+        let toastTimeout = null;
+        let lastObservedNow = Date.now();
+        let clockDriftHandledAt = 0;
+        const settings = loadSettings();
+        const timerState = loadTimerState(settings.defaultTimerMinutes * 60);
+
+        function safeParseJSON(rawValue, fallbackValue) {
+            if (!rawValue) return fallbackValue;
+            try {
+                return JSON.parse(rawValue);
+            } catch (error) {
+                return fallbackValue;
+            }
+        }
+
+        function loadSettings() {
+            const parsed = safeParseJSON(localStorage.getItem(SETTINGS_STORAGE_KEY), {});
+            const defaultTimerMinutes = Number(parsed.defaultTimerMinutes);
+            return {
+                defaultTimerMinutes: Number.isFinite(defaultTimerMinutes) && defaultTimerMinutes >= 5 && defaultTimerMinutes <= 360 ? defaultTimerMinutes : 180
+            };
+        }
+
+        function saveSettings() {
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        }
+
+        function loadTimerState(fallbackSeconds) {
+            const parsed = safeParseJSON(localStorage.getItem(TIMER_STORAGE_KEY), {});
+            const remainingSeconds = Number(parsed.remainingSeconds);
+            return {
+                isRunning: parsed.isRunning === true,
+                remainingSeconds: Number.isFinite(remainingSeconds) && remainingSeconds >= 0 ? remainingSeconds : fallbackSeconds,
+                targetEndMs: Number(parsed.targetEndMs) || null
+            };
+        }
+
+        function saveTimerState() {
+            localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(timerState));
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => toast.classList.remove('show'), TOAST_DISPLAY_DURATION_MS);
+        }
+
+        function getDateAsNumericKey(date) {
+            return (date.getFullYear() * 10000) + ((date.getMonth() + 1) * 100) + date.getDate();
+        }
+
+        function parseTaskDate(taskDate) {
+            const [monthAbbr, dayStr] = taskDate.split(' ');
+            const month = MONTHS[monthAbbr];
+            const day = Number(dayStr);
+            if (month === undefined || !Number.isFinite(day)) {
+                console.warn(`Invalid task date format: expected "MMM DD" (e.g., "Apr 22"), got: ${taskDate}`);
+                return new Date(SCHEDULE_YEAR, 0, 1, 12, 0, 0, 0);
+            }
+            return new Date(SCHEDULE_YEAR, month, day, 12, 0, 0, 0);
+        }
+
+        function getTaskById(taskId) {
+            return schedule.find(task => task.id === taskId);
+        }
+
+        function isTaskUnlocked(task, now = new Date()) {
+            return getDateAsNumericKey(now) >= getDateAsNumericKey(parseTaskDate(task.date));
+        }
+
+        function getTaskUnlockLabel(task) {
+            return parseTaskDate(task.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        function normalizeProgress() {
+            let changed = false;
+            schedule.forEach(task => {
+                if (globalProgress[task.id] === true && !isTaskUnlocked(task)) {
+                    globalProgress[task.id] = false;
+                    changed = true;
+                }
+            });
+            return changed;
+        }
+
+        function persistProgress() {
+            localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(globalProgress));
+            if (docRef && typeof docRef.set === 'function') {
+                docRef.set(globalProgress).catch(() => showToast('Cloud sync unavailable. Progress saved locally.'));
+            }
+        }
 
         function updateCountdowns() {
-            const today = new Date(); 
+            const today = new Date();
             const list = document.getElementById('countdownList');
+            list.innerHTML = '';
             exams.forEach(exam => {
-                const diffTime = exam.date - today;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                let daysText = diffDays > 0 ? diffDays + " Days" : (diffDays === 0 ? "TODAY" : "DONE");
+                const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0, 0);
+                const examDay = new Date(exam.date.getFullYear(), exam.date.getMonth(), exam.date.getDate(), 12, 0, 0, 0);
+                const diffDays = Math.ceil((examDay - startToday) / DAY_MS);
+                const daysText = diffDays > 0 ? `${diffDays} Days` : (diffDays === 0 ? 'TODAY' : 'DONE');
                 list.innerHTML += `<div class="exam-item"><span class="exam-name c-${exam.class}">${exam.name}</span><span class="days-left bg-${exam.class} c-${exam.class}">${daysText}</span></div>`;
             });
         }
 
+        function updateSubjectFilterOptions() {
+            const subjectFilter = document.getElementById('subjectFilter');
+            const selected = subjectFilter.value || 'all';
+            const subjects = [...new Set(schedule.map(task => task.subject))].sort();
+            subjectFilter.innerHTML = '<option value="all">All subjects</option>' + subjects.map(subject => `<option value="${subject}">${subject}</option>`).join('');
+            subjectFilter.value = subjects.includes(selected) ? selected : 'all';
+        }
+
+        function sortTasks(tasks, sortValue) {
+            if (sortValue === 'subject') return [...tasks].sort((a, b) => a.subject.localeCompare(b.subject) || parseTaskDate(a.date) - parseTaskDate(b.date));
+            if (sortValue === 'date-desc') return [...tasks].sort((a, b) => parseTaskDate(b.date) - parseTaskDate(a.date));
+            return [...tasks].sort((a, b) => parseTaskDate(a.date) - parseTaskDate(b.date));
+        }
+
+        function taskMatchesFilters(task, searchValue, subjectValue, statusValue) {
+            const taskDone = globalProgress[task.id] === true;
+            const unlocked = isTaskUnlocked(task);
+            const text = `${task.subject} ${task.desc}`.toLowerCase();
+            if (searchValue && !text.includes(searchValue)) return false;
+            if (subjectValue !== 'all' && task.subject !== subjectValue) return false;
+            if (statusValue === 'available' && (!unlocked || taskDone)) return false;
+            if (statusValue === 'locked' && unlocked) return false;
+            if (statusValue === 'completed' && !taskDone) return false;
+            return true;
+        }
+
         function renderSchedule() {
             const container = document.getElementById('scheduleContainer');
-            container.innerHTML = ""; 
+            const searchValue = document.getElementById('searchInput').value.trim().toLowerCase();
+            const subjectValue = document.getElementById('subjectFilter').value;
+            const statusValue = document.getElementById('statusFilter').value;
+            const sortValue = document.getElementById('sortSelect').value;
+            container.innerHTML = '';
             const phases = [...new Set(schedule.map(t => t.phase))];
-            
+
+            let renderedTaskCount = 0;
             phases.forEach(phaseName => {
-                const phaseTasks = schedule.filter(t => t.phase === phaseName);
+                const phaseTasks = sortTasks(schedule.filter(t => t.phase === phaseName), sortValue)
+                    .filter(task => taskMatchesFilters(task, searchValue, subjectValue, statusValue));
+                if (phaseTasks.length === 0) return;
+
                 let phaseHTML = `<div class="phase"><h3>${phaseName}</h3><div class="task-grid">`;
-                
                 phaseTasks.forEach(task => {
-                    const isDone = globalProgress[task.id] ? "completed" : "";
-                    const btnText = globalProgress[task.id] ? "Completed ✓" : "Mark 3h Complete";
+                    const isDone = globalProgress[task.id] ? 'completed' : '';
+                    const unlocked = isTaskUnlocked(task);
+                    const isLocked = !unlocked && !globalProgress[task.id];
+                    const btnText = globalProgress[task.id] ? 'Completed ✓' : (isLocked ? 'Locked until due date' : 'Mark 3h Complete');
                     phaseHTML += `
                         <div class="task-card" style="border-top: 3px solid var(--${task.class}-color)">
                             <div class="task-date">${task.date}</div>
                             <div class="task-subject c-${task.class}">${task.subject}</div>
                             <div class="task-desc">${task.desc}</div>
-                            <button id="btn-${task.id}" class="check-btn ${isDone}" onclick="toggleTask('${task.id}')">${btnText}</button>
+                            ${isLocked ? `<div class="task-lock-note">Available ${getTaskUnlockLabel(task)}</div>` : ``}
+                            <button id="btn-${task.id}" class="check-btn ${isDone}" onclick="toggleTask('${task.id}')" ${isLocked ? 'disabled' : ''}>${btnText}</button>
                         </div>`;
+                    renderedTaskCount += 1;
                 });
                 phaseHTML += `</div></div>`;
                 container.innerHTML += phaseHTML;
             });
+
+            if (renderedTaskCount === 0) {
+                container.innerHTML = '<div class="empty-state">No tasks match these filters yet. Try clearing search/filter options.</div>';
+            }
             updateProgressBar();
         }
 
         window.toggleTask = function(taskId) {
-            globalProgress[taskId] = !globalProgress[taskId];
-            docRef.set(globalProgress).catch(err => console.error("Firebase Sync Error: ", err));
-        }
+            const task = getTaskById(taskId);
+            if (!task) return;
+            const currentlyDone = globalProgress[taskId] === true;
+            if (!currentlyDone && !isTaskUnlocked(task)) {
+                showToast(`You can mark this complete on ${getTaskUnlockLabel(task)}.`);
+                return;
+            }
+            globalProgress[taskId] = !currentlyDone;
+            persistProgress();
+            renderSchedule();
+        };
 
         function updateProgressBar() {
             const completedCount = Object.values(globalProgress).filter(v => v === true).length;
             const percentage = Math.round((completedCount / schedule.length) * 100);
-            document.getElementById('progressBar').style.width = percentage + '%';
-            document.getElementById('progressText').innerText = percentage + '% A-Grade Readiness Achieved';
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+            document.getElementById('progressText').innerText = `${percentage}% A-Grade Readiness Achieved`;
         }
 
-        docRef.onSnapshot((doc) => {
-            if (doc.exists) {
-                globalProgress = doc.data();
-            } else {
-                globalProgress = {};
-            }
-            renderSchedule(); 
-        });
+        function formatTime(seconds) {
+            const safe = Math.max(0, Math.floor(seconds));
+            const hrs = String(Math.floor(safe / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((safe % 3600) / 60)).padStart(2, '0');
+            const secs = String(safe % 60).padStart(2, '0');
+            return `${hrs}:${mins}:${secs}`;
+        }
 
+        function renderTimer() {
+            document.getElementById('timerDisplay').textContent = formatTime(timerState.remainingSeconds);
+            document.getElementById('timerToggleBtn').textContent = timerState.isRunning ? 'Pause' : 'Start';
+            document.getElementById('timerStatus').textContent = timerState.isRunning ? 'Running...' : 'Ready';
+            document.getElementById('defaultTimerMinutesInput').value = settings.defaultTimerMinutes;
+        }
+
+        function tickTimer() {
+            const now = Date.now();
+            const driftDetected = Math.abs(now - lastObservedNow) > CLOCK_DRIFT_DETECTION_MS;
+            if (driftDetected && now - clockDriftHandledAt > CLOCK_DRIFT_THROTTLE_MS) {
+                clockDriftHandledAt = now;
+                if (timerState.isRunning) {
+                    timerState.isRunning = false;
+                    timerState.targetEndMs = null;
+                    saveTimerState();
+                }
+                showToast('System clock changed. Timer paused for safety; please resume.');
+                renderSchedule();
+            }
+            lastObservedNow = now;
+            if (!timerState.isRunning || !timerState.targetEndMs) {
+                renderTimer();
+                return;
+            }
+            timerState.remainingSeconds = Math.max(0, Math.ceil((timerState.targetEndMs - now) / 1000));
+            if (timerState.remainingSeconds <= 0) {
+                timerState.isRunning = false;
+                timerState.targetEndMs = null;
+                timerState.remainingSeconds = 0;
+                showToast('Focus block complete. Great work!');
+            }
+            saveTimerState();
+            renderTimer();
+        }
+
+        function startTimer() {
+            if (timerState.remainingSeconds <= 0) timerState.remainingSeconds = settings.defaultTimerMinutes * 60;
+            timerState.isRunning = true;
+            timerState.targetEndMs = Date.now() + (timerState.remainingSeconds * 1000);
+            saveTimerState();
+            renderTimer();
+        }
+
+        function pauseTimer() {
+            tickTimer();
+            timerState.isRunning = false;
+            timerState.targetEndMs = null;
+            saveTimerState();
+            renderTimer();
+        }
+
+        function resetTimer() {
+            timerState.isRunning = false;
+            timerState.targetEndMs = null;
+            timerState.remainingSeconds = settings.defaultTimerMinutes * 60;
+            saveTimerState();
+            renderTimer();
+        }
+
+        function bindUiEvents() {
+            ['searchInput', 'subjectFilter', 'statusFilter', 'sortSelect'].forEach(id => {
+                document.getElementById(id).addEventListener('input', renderSchedule);
+                document.getElementById(id).addEventListener('change', renderSchedule);
+            });
+            document.getElementById('timerToggleBtn').addEventListener('click', () => timerState.isRunning ? pauseTimer() : startTimer());
+            document.getElementById('timerResetBtn').addEventListener('click', resetTimer);
+            document.querySelectorAll('[data-timer-min]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const minutes = Number(button.dataset.timerMin);
+                    if (!Number.isFinite(minutes) || minutes <= 0) {
+                        showToast('Invalid timer preset.');
+                        return;
+                    }
+                    timerState.isRunning = false;
+                    timerState.targetEndMs = null;
+                    timerState.remainingSeconds = minutes * 60;
+                    saveTimerState();
+                    renderTimer();
+                });
+            });
+            document.getElementById('defaultTimerMinutesInput').addEventListener('change', event => {
+                const nextValue = Number(event.target.value);
+                if (!Number.isFinite(nextValue) || nextValue < 5 || nextValue > 360) {
+                    showToast('Default timer must be between 5 and 360 minutes.');
+                    renderTimer();
+                    return;
+                }
+                settings.defaultTimerMinutes = nextValue;
+                saveSettings();
+                if (!timerState.isRunning) resetTimer();
+                showToast('Default timer updated.');
+            });
+            document.addEventListener('visibilitychange', tickTimer);
+            document.addEventListener('keydown', event => {
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+                    event.preventDefault();
+                    document.getElementById('searchInput').focus();
+                }
+                if (event.altKey && event.shiftKey && event.key.toLowerCase() === 't' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                    event.preventDefault();
+                    timerState.isRunning ? pauseTimer() : startTimer();
+                }
+            });
+        }
+
+        function initializeProgress() {
+            globalProgress = safeParseJSON(localStorage.getItem(PROGRESS_STORAGE_KEY), {});
+            if (normalizeProgress()) persistProgress();
+            renderSchedule();
+        }
+
+        function subscribeProgress() {
+            if (!docRef || typeof docRef.onSnapshot !== 'function') {
+                initializeProgress();
+                showToast('Cloud sync unavailable. Using local mode.');
+                return;
+            }
+            docRef.onSnapshot((doc) => {
+                if (doc.exists && doc.data()) {
+                    globalProgress = doc.data();
+                } else {
+                    globalProgress = safeParseJSON(localStorage.getItem(PROGRESS_STORAGE_KEY), {});
+                }
+                if (normalizeProgress()) persistProgress();
+                renderSchedule();
+            }, () => {
+                initializeProgress();
+                showToast('Using local progress mode (cloud temporarily unavailable).');
+            });
+        }
+
+        updateSubjectFilterOptions();
+        bindUiEvents();
         updateCountdowns();
+        subscribeProgress();
+        tickTimer();
+        setInterval(tickTimer, 1000);
     </script>
 </body>
 </html>
